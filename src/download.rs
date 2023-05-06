@@ -1,6 +1,6 @@
-use std::{fs::File, io::Write};
-
+use futures::future;
 use reqwest::Response;
+use std::{fs::File, io::Write};
 
 use crate::{
     album_detail::{get_album, Album},
@@ -23,26 +23,33 @@ pub async fn download_all() -> Result<(), Box<dyn Error>> {
         .zip(t.iter().map(|y| &y.name))
         .collect();
     let dir = Path::new("./siren");
+    let mut tasks = Vec::new();
     for (cid, dir_name) in download_map {
-        let data = get_album(cid).await?.to_album();
-        println!("start {}", data.name);
-        let dir = &dir.join(dir_name.trim());
-        fs::create_dir_all(dir)?;
-        println!("start head {}", data.name);
-        head_download(&data, "head.", dir).await?;
-        head_download(&data, "wide_head.", dir).await?;
-        write_info(&data, &dir.join("info.txt")).await?;
-        println!("start song {}", data.name);
-        download_song(&data, dir).await?;
+        tasks.push(download_album(cid, dir, dir_name))
     }
+    future::join_all(tasks).await;
     Ok(())
 }
 
-async fn head_download(data: &Album, name: &str, dir: &Path) -> Result<(), Box<dyn Error>> {
-    let t = data.coverUrl.split('.').rev().collect::<Vec<&str>>();
+async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box<dyn Error>> {
+    let data = get_album(cid).await?.to_album();
+    println!("start {}", data.name);
+    let dir = &dir.join(dir_name.trim());
+    fs::create_dir_all(dir)?;
+    println!("start head {}", data.name);
+    head_download(&data.coverUrl, "head.", dir).await?;
+    head_download(&data.coverDeUrl, "wide_head.", dir).await?;
+    write_info(&data, &dir.join("info.txt")).await?;
+    println!("start song {}", data.name);
+    download_song(&data, dir).await?;
+    Ok(())
+}
+
+async fn head_download(url: &str, name: &str, dir: &Path) -> Result<(), Box<dyn Error>> {
+    let t = url.split('.').rev().collect::<Vec<&str>>();
     let t = t.first().unwrap();
     let file = dir.join(name.to_owned() + t);
-    download_file(&data.coverUrl, &file).await?;
+    download_file(&url, &file).await?;
     Ok(())
 }
 
@@ -59,6 +66,7 @@ async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
+    let t_max = data.songs.len() - 1;
     let t = data
         .songs
         .iter()
@@ -66,7 +74,14 @@ async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
             let t = x
                 .artistes
                 .iter()
-                .map(|x| x.to_owned() + "、")
+                .enumerate()
+                .map(|x| {
+                    if x.0 == t_max {
+                        x.1.to_owned()
+                    } else {
+                        x.1.to_owned() + "、"
+                    }
+                })
                 .collect::<String>();
             format!("歌曲：{}\t作者：{}\n", x.name, t)
         })
