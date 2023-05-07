@@ -1,6 +1,6 @@
 use futures::future;
 use reqwest::Response;
-use std::{fs::File, io::Write};
+use std::{fs::File, io::Write, thread, time::Duration};
 
 use crate::{
     album_detail::{get_album, Album},
@@ -12,7 +12,13 @@ use std::{collections::HashMap, error::Error, fs, io::Read, path::Path};
 
 pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
     let client = reqwest::Client::builder().user_agent(USER_AGENT).build()?;
-    Ok(client.get(url).send().await?)
+    let mut t = client.get(url).send().await;
+    while t.is_err() {
+        println!("testing");
+        t = client.get(url).send().await;
+        thread::sleep(Duration::from_secs(1))
+    };
+    Ok(t?)
 }
 
 pub async fn download_all() -> Result<(), Box<dyn Error>> {
@@ -119,8 +125,13 @@ async fn download_song(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> 
 
 #[cfg(test)]
 mod test {
+    use crate::USER_AGENT;
+
     use super::download_file;
-    use std::path::Path;
+    use std::{
+        path::Path,
+        time::Duration, thread,
+    };
     use tokio::runtime::Builder;
     #[test]
     fn t() {
@@ -134,5 +145,26 @@ mod test {
                 .await
             })
             .unwrap();
+    }
+    #[test]
+    fn x() {
+        let runtime = Builder::new_multi_thread().enable_all().build().unwrap();
+        runtime.block_on(async {
+            let client = reqwest::Client::builder()
+                .user_agent(USER_AGENT)
+                .timeout(Duration::from_secs(10))
+                .build()
+                .unwrap();
+            let mut t = client.get("http://127.0.0.1:8000").send().await;
+            let mut tmp = 0;
+            let count = 3;
+            while t.is_err() && count > tmp {
+                println!("testing");
+                tmp += 1;
+                t = client.get("http://127.0.0.1:8000").send().await;
+                thread::sleep(Duration::from_secs(1))
+            }
+            println!("{:?}", t)
+        });
     }
 }
