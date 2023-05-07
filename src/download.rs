@@ -49,7 +49,7 @@ async fn head_download(url: &str, name: &str, dir: &Path) -> Result<(), Box<dyn 
     let t = url.split('.').rev().collect::<Vec<&str>>();
     let t = t.first().unwrap();
     let file = dir.join(name.to_owned() + t);
-    download_file(&url, &file).await?;
+    download_file(url, &file).await?;
     Ok(())
 }
 
@@ -90,7 +90,7 @@ async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
         .bytes()
         .collect::<Vec<u8>>();
     let mut file = File::create(path)?;
-    file.write(&t)?;
+    file.write_all(&t)?;
     Ok(())
 }
 

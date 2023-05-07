@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tokio::runtime::Builder;
 
-use crate::{download::download, API, USER_AGENT};
+use crate::{download::download, API};
 
-#[warn(non_snake_case)]
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Request {
     code: isize,
@@ -15,7 +15,8 @@ pub struct Request {
 impl Request {
     pub fn from(cid: &str) -> Result<Self, Box<dyn Error>> {
         let runtime = Builder::new_multi_thread().enable_all().build()?;
-        Ok(runtime.block_on(async { get_album(cid).await })?)
+        let t = runtime.block_on(async { get_album(cid).await })?;
+        Ok(t)
     }
     pub fn to_album(self) -> Album {
         self.data
@@ -29,7 +30,7 @@ pub async fn get_album(cid: &str) -> Result<Request, Box<dyn Error>> {
         .await?)
 }
 
-#[warn(non_snake_case)]
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Album {
     cid: String,

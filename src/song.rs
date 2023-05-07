@@ -15,7 +15,8 @@ pub struct Request {
 impl Request {
     pub fn get(cid: &str) -> Result<Self, Box<dyn Error>> {
         let runtime = Builder::new_multi_thread().enable_all().build()?;
-        Ok(runtime.block_on(async { get_song(cid).await })?)
+        let t = runtime.block_on(async { get_song(cid).await })?;
+        Ok(t)
     }
     pub fn to_song(self) -> Song {
         self.data
@@ -29,7 +30,7 @@ pub async fn get_song(cid: &str) -> Result<Request, Box<dyn Error>> {
         .await?)
 }
 
-#[warn(non_snake_case)]
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Song {
     cid: String,
