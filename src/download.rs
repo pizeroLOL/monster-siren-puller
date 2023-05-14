@@ -3,9 +3,9 @@ use reqwest::Response;
 use std::{fs::File, io::Write, thread, time::Duration};
 
 use crate::{
-    album_detail::{get_album, Album},
+    album_detail::{get_album, Album, SongIndex},
     albums::get_albums_index,
-    song::get_song,
+    song::{get_song, Song},
     USER_AGENT,
 };
 use std::{collections::HashMap, error::Error, fs, io::Read, path::Path};
@@ -16,8 +16,8 @@ pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
     while t.is_err() {
         println!("testing");
         t = client.get(url).send().await;
-        thread::sleep(Duration::from_secs(1))
-    };
+        thread::sleep(Duration::from_secs(30))
+    }
     Ok(t?)
 }
 
@@ -29,11 +29,14 @@ pub async fn download_all() -> Result<(), Box<dyn Error>> {
         .zip(t.iter().map(|y| &y.name))
         .collect();
     let dir = Path::new("./siren");
-    let mut tasks = Vec::new();
+    // let mut tasks = Vec::new();
+    // for (cid, dir_name) in download_map {
+    //     tasks.push(download_album(cid, dir, dir_name))
+    // }
+    // future::join_all(tasks).await;
     for (cid, dir_name) in download_map {
-        tasks.push(download_album(cid, dir, dir_name))
+        download_album(cid, dir, dir_name).await?;
     }
-    future::join_all(tasks).await;
     Ok(())
 }
 
@@ -42,12 +45,14 @@ async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box
     println!("start {}", data.name);
     let dir = &dir.join(dir_name.trim());
     fs::create_dir_all(dir)?;
-    println!("start head {}", data.name);
-    head_download(&data.coverUrl, "head.", dir).await?;
-    head_download(&data.coverDeUrl, "wide_head.", dir).await?;
+    let tasks = vec![
+        head_download(&data.coverUrl, "head.", dir),
+        head_download(&data.coverDeUrl, "wide_head.", dir),
+    ];
     write_info(&data, &dir.join("info.txt")).await?;
-    println!("start song {}", data.name);
-    download_song(&data, dir).await?;
+    download_songs(&data, dir).await?;
+    future::join_all(tasks).await;
+    println!("end {}", data.name);
     Ok(())
 }
 
@@ -100,26 +105,45 @@ async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn download_song(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
+async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
+    let mut tasks = Vec::new();
     for x in data.songs.iter() {
-        let song = get_song(&x.cid).await?.to_song();
-        let t = song.sourceUrl.split('.').rev().collect::<Vec<&str>>();
-        download_file(
-            &song.sourceUrl,
-            &path.join(song.name.trim().to_owned() + "." + t.first().unwrap()),
-        )
-        .await?;
-        let t = vec![song.lyricUrl, song.mvUrl, song.mvCoverUrl];
-        for i in t.iter().filter(|t| t.is_some()) {
-            let i = i.clone().unwrap();
-            let t = i.split('.').rev().collect::<Vec<&str>>();
-            download_file(
-                &i,
-                &path.join(song.name.trim().to_owned() + "." + t.first().unwrap()),
-            )
-            .await?;
-        }
+        tasks.push(download_song(x, path));
     }
+    future::join_all(tasks).await;
+    Ok(())
+}
+
+async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Error>> {
+    let song = get_song(&index.cid).await?.to_song();
+    println!("  start:{}",&song.name);
+    let t = vec![
+        &song.sourceUrl,
+        &song.lyricUrl,
+        &song.mvUrl,
+        &song.mvCoverUrl,
+    ];
+    let mut tasks = Vec::new();
+    for i in t.iter().filter(|t| t.is_some()) {
+        tasks.push(download_asset(i, path, &song))
+    }
+    future::join_all(tasks).await;
+    println!("  end:{}",&song.name);
+    Ok(())
+}
+
+async fn download_asset(
+    item: &Option<String>,
+    path: &Path,
+    song: &Song,
+) -> Result<(), Box<dyn Error>> {
+    let i = item.clone().unwrap();
+    let t = i.split('.').rev().collect::<Vec<&str>>();
+    download_file(
+        &i,
+        &path.join(song.name.trim().to_owned() + "." + t.first().unwrap()),
+    )
+    .await?;
     Ok(())
 }
 
@@ -128,10 +152,7 @@ mod test {
     use crate::USER_AGENT;
 
     use super::download_file;
-    use std::{
-        path::Path,
-        time::Duration, thread,
-    };
+    use std::{path::Path, thread, time::Duration};
     use tokio::runtime::Builder;
     #[test]
     fn t() {

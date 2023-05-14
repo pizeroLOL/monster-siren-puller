@@ -36,7 +36,7 @@ pub struct Song {
     cid: String,
     pub name: String,
     albumCid: String,
-    pub sourceUrl: String,
+    pub sourceUrl: Option<String>,
     pub lyricUrl: Option<String>,
     pub mvUrl: Option<String>,
     pub mvCoverUrl: Option<String>,
