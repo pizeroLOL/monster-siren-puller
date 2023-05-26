@@ -22,11 +22,12 @@ pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
 }
 
 pub async fn download_all() -> Result<(), Box<dyn Error>> {
-    let t = get_albums_index().await?.to_index_list();
+    let t = get_albums_index().await?;
+    let t = t.to_index_list();
     let download_map: HashMap<_, _> = t
         .iter()
-        .map(|x| &x.cid)
-        .zip(t.iter().map(|y| &y.name))
+        .map(|x| x.get_cid())
+        .zip(t.iter().map(|y| y.get_name()))
         .collect();
     let dir = Path::new("./siren");
     // let mut tasks = Vec::new();
@@ -41,18 +42,19 @@ pub async fn download_all() -> Result<(), Box<dyn Error>> {
 }
 
 async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box<dyn Error>> {
-    let data = get_album(cid).await?.to_album();
-    println!("start {}", data.name);
+    let data = get_album(cid).await?;
+    let data = data.to_album();
+    println!("start {}", data.get_name());
     let dir = &dir.join(dir_name.trim());
     fs::create_dir_all(dir)?;
     let tasks = vec![
-        head_download(&data.coverUrl, "head.", dir),
-        head_download(&data.coverDeUrl, "wide_head.", dir),
+        head_download(data.get_cover_url(), "head.", dir),
+        head_download(data.get_cover_de_url(), "wide_head.", dir),
     ];
     write_info(&data, &dir.join("info.txt")).await?;
     download_songs(&data, dir).await?;
     future::join_all(tasks).await;
-    println!("end {}", data.name);
+    println!("end {}", data.get_name());
     Ok(())
 }
 
@@ -77,13 +79,13 @@ async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
-    let t_max = data.songs.len() - 1;
+    let t_max = data.get_songs().len() - 1;
     let t = data
-        .songs
+        .get_songs()
         .iter()
         .map(|x| {
             let t = x
-                .artistes
+                .get_artistes()
                 .iter()
                 .enumerate()
                 .map(|x| {
@@ -94,12 +96,17 @@ async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
                     }
                 })
                 .collect::<String>();
-            format!("歌曲：{}\t作者：{}\n", x.name, t)
+            format!("歌曲：{}\t作者：{}\n", x.get_name(), t)
         })
         .collect::<String>();
-    let t = format!("专辑名：{}\n简介：{}\n{}", data.name, data.intro, t)
-        .bytes()
-        .collect::<Vec<u8>>();
+    let t = format!(
+        "专辑名：{}\n简介：{}\n{}",
+        data.get_name(),
+        data.get_intro(),
+        t
+    )
+    .bytes()
+    .collect::<Vec<u8>>();
     let mut file = File::create(path)?;
     file.write_all(&t)?;
     Ok(())
@@ -107,7 +114,7 @@ async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
 
 async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
     let mut tasks = Vec::new();
-    for x in data.songs.iter() {
+    for x in data.get_songs().iter() {
         tasks.push(download_song(x, path));
     }
     future::join_all(tasks).await;
@@ -115,20 +122,21 @@ async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>>
 }
 
 async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Error>> {
-    let song = get_song(&index.cid).await?.to_song();
-    println!("  start:{}",&song.name);
+    let song = get_song(index.get_cid()).await?;
+    let song = song.to_song();
+    println!("  start:{}", song.get_name());
     let t = vec![
-        &song.sourceUrl,
-        &song.lyricUrl,
-        &song.mvUrl,
-        &song.mvCoverUrl,
+        song.get_source_url(),
+        song.get_lyric_url(),
+        song.get_mv_url(),
+        song.get_mv_cover_url(),
     ];
     let mut tasks = Vec::new();
     for i in t.iter().filter(|t| t.is_some()) {
-        tasks.push(download_asset(i, path, &song))
+        tasks.push(download_asset(i, path, song))
     }
     future::join_all(tasks).await;
-    println!("  end:{}",&song.name);
+    println!("  end:{}", song.get_name());
     Ok(())
 }
 
@@ -141,7 +149,7 @@ async fn download_asset(
     let t = i.split('.').rev().collect::<Vec<&str>>();
     download_file(
         &i,
-        &path.join(song.name.trim().to_owned() + "." + t.first().unwrap()),
+        &path.join(song.get_name().trim().to_owned() + "." + t.first().unwrap()),
     )
     .await?;
     Ok(())

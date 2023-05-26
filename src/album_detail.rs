@@ -9,7 +9,7 @@ use crate::{download::download, API};
 pub struct Request {
     code: isize,
     msg: String,
-    pub data: Album,
+    data: Album,
 }
 
 impl Request {
@@ -18,8 +18,8 @@ impl Request {
         let t = runtime.block_on(async { get_album(cid).await })?;
         Ok(t)
     }
-    pub fn to_album(self) -> Album {
-        self.data
+    pub fn to_album(&self) -> &Album {
+        &self.data
     }
 }
 
@@ -34,16 +34,46 @@ pub async fn get_album(cid: &str) -> Result<Request, Box<dyn Error>> {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Album {
     cid: String,
-    pub name: String,
-    pub intro: String,
-    pub coverUrl: String,
-    pub coverDeUrl: String,
-    pub songs: Vec<SongIndex>,
+    name: String,
+    intro: String,
+    coverUrl: String,
+    coverDeUrl: String,
+    songs: Vec<SongIndex>,
+}
+
+impl Album {
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+    pub fn get_intro(&self) -> &str {
+        &self.intro
+    }
+    pub fn get_cover_url(&self) -> &str {
+        &self.coverUrl
+    }
+    pub fn get_cover_de_url(&self) -> &str {
+        &self.coverDeUrl
+    }
+    pub fn get_songs(&self) -> &Vec<SongIndex> {
+        &self.songs
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SongIndex {
-    pub cid: String,
-    pub name: String,
-    pub artistes: Vec<String>,
+    cid: String,
+    name: String,
+    artistes: Vec<String>,
+}
+
+impl SongIndex {
+    pub fn get_cid(&self) -> &str {
+        &self.cid
+    }
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+    pub fn get_artistes(&self) -> &Vec<String> {
+        &self.artistes
+    }
 }

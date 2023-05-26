@@ -8,7 +8,7 @@ use tokio::runtime::Builder;
 pub struct Request {
     code: isize,
     msg: String,
-    pub data: Vec<Index>,
+    data: Vec<Index>,
 }
 
 impl Request {
@@ -20,8 +20,11 @@ impl Request {
         let t = runtime.block_on(async { get_albums_index().await })?;
         Ok(t)
     }
-    pub fn to_index_list(self) -> Vec<Index> {
-        self.data
+    pub fn to_index_list(&self) -> &Vec<Index> {
+        &self.data
+    }
+    pub fn get_data(&self) -> &Vec<Index> {
+        &self.data
     }
 }
 
@@ -35,8 +38,17 @@ pub async fn get_albums_index() -> Result<Request, Box<dyn Error>> {
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Index {
-    pub cid: String,
-    pub name: String,
+    cid: String,
+    name: String,
     coverUrl: String,
     artistes: Vec<String>,
+}
+
+impl Index {
+    pub fn get_cid(&self) -> &str {
+        &self.cid
+    }
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
 }
