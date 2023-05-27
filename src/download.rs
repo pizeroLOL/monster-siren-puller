@@ -1,5 +1,6 @@
 use futures::future;
 use reqwest::Response;
+use std::{error::Error, fs, io::Read, path::Path};
 use std::{fs::File, io::Write, thread, time::Duration};
 
 use crate::{
@@ -8,7 +9,6 @@ use crate::{
     song::{get_song, Song},
     USER_AGENT,
 };
-use std::{collections::HashMap, error::Error, fs, io::Read, path::Path};
 
 pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
     let client = reqwest::Client::builder().user_agent(USER_AGENT).build()?;
@@ -21,22 +21,67 @@ pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
     Ok(t?)
 }
 
-pub async fn download_all() -> Result<(), Box<dyn Error>> {
+pub async fn get_cids() -> Result<Vec<(String, String)>, Box<dyn Error>> {
     let t = get_albums_index().await?;
     let t = t.to_index_list();
-    let download_map: HashMap<_, _> = t
+    let t: Vec<(String, String)> = t
         .iter()
-        .map(|x| x.get_cid())
-        .zip(t.iter().map(|y| y.get_name()))
+        .map(|x| x.get_cid().to_string())
+        .zip(t.iter().map(|y| y.get_name().to_string()))
         .collect();
+    Ok(t)
+    // println!("{:?}",download_map);
+}
+
+pub async fn dont_use_download_all() -> Result<(), Box<dyn Error>> {
     let dir = Path::new("./siren");
-    // let mut tasks = Vec::new();
-    // for (cid, dir_name) in download_map {
-    //     tasks.push(download_album(cid, dir, dir_name))
-    // }
-    // future::join_all(tasks).await;
+    let download_map = get_cids().await?;
+    let tasks: Vec<_> = download_map
+        .iter()
+        .map(|(cid, name)| download_album(cid, dir, name))
+        .collect();
+    future::join_all(tasks).await;
+    Ok(())
+}
+
+pub async fn download_top(top: usize) -> Result<(), Box<dyn Error>> {
+    let dir = Path::new("./siren");
+    let download_map = get_cids().await?;
+    for (cid, dir_name) in download_map
+        .iter()
+        .enumerate()
+        .filter(|x| x.0 < top)
+        .map(|x| x.1)
+    {
+        download_album(cid, dir, dir_name).await?
+    }
+    Ok(())
+}
+
+pub async fn download_sync() -> Result<(), Box<dyn Error>> {
+    let dir = Path::new("./siren");
+    let dirs = fs::read_dir(dir)?
+        .map(|x| {
+            let x = x.unwrap().path();
+            x.to_string_lossy().into()
+        })
+        .collect::<Vec<String>>();
+    let download_map = get_cids().await?;
     for (cid, dir_name) in download_map {
-        download_album(cid, dir, dir_name).await?;
+        if !dirs.contains(&dir_name.trim().to_string()) {
+            println!("skip {}",dir_name);
+            continue;
+        }
+        download_album(&cid, dir, &dir_name).await?;
+    }
+    Ok(())
+}
+
+pub async fn download_all() -> Result<(), Box<dyn Error>> {
+    let download_map = get_cids().await?;
+    let dir = Path::new("./siren");
+    for (cid, dir_name) in download_map {
+        download_album(&cid, dir, &dir_name).await?;
     }
     Ok(())
 }
@@ -51,9 +96,11 @@ async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box
         head_download(data.get_cover_url(), "head.", dir),
         head_download(data.get_cover_de_url(), "wide_head.", dir),
     ];
-    write_info(&data, &dir.join("info.txt")).await?;
-    download_songs(&data, dir).await?;
-    future::join_all(tasks).await;
+    write_info(data, &dir.join("info.txt")).await?;
+    download_songs(data, dir).await?;
+    for i in future::join_all(tasks).await {
+        i?;
+    }
     println!("end {}", data.get_name());
     Ok(())
 }
@@ -117,7 +164,10 @@ async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>>
     for x in data.get_songs().iter() {
         tasks.push(download_song(x, path));
     }
-    future::join_all(tasks).await;
+    let t = future::join_all(tasks).await;
+    for i in t {
+        i?
+    }
     Ok(())
 }
 
@@ -135,7 +185,10 @@ async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Err
     for i in t.iter().filter(|t| t.is_some()) {
         tasks.push(download_asset(i, path, song))
     }
-    future::join_all(tasks).await;
+    let t = future::join_all(tasks).await;
+    for i in t {
+        i?;
+    }
     println!("  end:{}", song.get_name());
     Ok(())
 }
