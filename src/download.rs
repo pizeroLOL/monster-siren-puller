@@ -62,14 +62,22 @@ pub async fn download_sync() -> Result<(), Box<dyn Error>> {
     let dir = Path::new("./siren");
     let dirs = fs::read_dir(dir)?
         .map(|x| {
-            let x = x.unwrap().path();
+            let x = x.expect("无法读取文件夹").path();
+            let x = x
+                .strip_prefix("./siren/")
+                // TODO 添加错误提示
+                .expect(&format!("删除前缀错误"));
             x.to_string_lossy().into()
         })
         .collect::<Vec<String>>();
     let download_map = get_cids().await?;
+    if !dir.try_exists()? {
+        fs::create_dir_all(dir)?
+    }
+    println!("{:#?}", dirs);
     for (cid, dir_name) in download_map {
-        if !dirs.contains(&dir_name.trim().to_string()) {
-            println!("skip {}",dir_name);
+        if dirs.contains(&dir_name.trim().to_string()) {
+            println!("skip {}", dir_name);
             continue;
         }
         download_album(&cid, dir, &dir_name).await?;
