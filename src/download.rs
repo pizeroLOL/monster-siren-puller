@@ -1,6 +1,7 @@
 use futures::future;
 use reqwest::Response;
-use std::{error::Error, fs, io::Read, path::Path};
+use std::io::Read;
+use std::{error::Error, fs, path::Path};
 use std::{fs::File, io::Write, thread, time::Duration};
 
 use crate::{
@@ -69,7 +70,7 @@ pub async fn download_sync() -> Result<(), Box<dyn Error>> {
     let download_map = get_cids().await?;
     for (cid, dir_name) in download_map {
         if !dirs.contains(&dir_name.trim().to_string()) {
-            println!("skip {}",dir_name);
+            println!("skip {}", dir_name);
             continue;
         }
         download_album(&cid, dir, &dir_name).await?;
@@ -96,11 +97,13 @@ async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box
         head_download(data.get_cover_url(), "head.", dir),
         head_download(data.get_cover_de_url(), "wide_head.", dir),
     ];
-    write_info(data, &dir.join("info.txt")).await?;
     download_songs(data, dir).await?;
     for i in future::join_all(tasks).await {
-        i?;
+        if let Err(e) = i {
+            eprintln!("dl album {} error {:#?}", cid, e)
+        }
     }
+    write_info(data, &dir.join("info.txt")).await?;
     println!("end {}", data.get_name());
     Ok(())
 }
@@ -114,14 +117,25 @@ async fn head_download(url: &str, name: &str, dir: &Path) -> Result<(), Box<dyn 
 }
 
 async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
-    let byte = download(url)
-        .await?
-        .bytes()
-        .await?
-        .bytes()
-        .collect::<Result<Vec<_>, _>>();
+    let mut byte = Vec::new();
+    for error_count in 0..3 {
+        let tmp = download(url)
+            .await?
+            .bytes()
+            .await?
+            .bytes()
+            .collect::<Result<Vec<_>, _>>();
+        if let Ok(o) = tmp {
+            byte = o;
+            break;
+        }
+        eprintln!("dl file error: url: {}, count: {}", url, error_count);
+        if error_count == 2 {
+            return Err("dl file fall".into());
+        }
+    }
     let mut file = File::create(path)?;
-    file.write_all(&byte?)?;
+    file.write_all(&byte)?;
     Ok(())
 }
 
@@ -166,7 +180,9 @@ async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>>
     }
     let t = future::join_all(tasks).await;
     for i in t {
-        i?
+        if let Err(e) = i {
+            eprintln!("dl song error: name: {}, error{}", data.get_name(), e)
+        }
     }
     Ok(())
 }
@@ -187,7 +203,9 @@ async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Err
     }
     let t = future::join_all(tasks).await;
     for i in t {
-        i?;
+        if let Err(e) = i {
+            eprintln!("dl song error {}: {}",song.get_name(),e)
+        }
     }
     println!("  end:{}", song.get_name());
     Ok(())
