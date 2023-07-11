@@ -1,8 +1,11 @@
-use std::env;
+use std::{
+    env::{self, Args},
+    error::Error,
+};
 
 use monster_siren_puller::{
     self,
-    download::{download_all, download_sync, download_top},
+    download::{download_all, download_sync, download_top, get_cids},
 };
 
 fn help() {
@@ -16,12 +19,14 @@ top   \t获取前<参数>首
 all   \t获取所有歌曲
 sync  \t获取未下载专辑
 repair\t删除下载了一半的专辑
+show  \t展示专辑 cid 和对应名称
         "
     )
 }
 
-async fn top(num: Option<String>) {
-    let Some(num)  = num else{
+async fn top(num: Args) {
+    let mut num = num;
+    let Some(num)  = num.next() else{
         println!("缺少前top 后参数");
         return help()
     };
@@ -58,6 +63,25 @@ fn repair() {
     };
 }
 
+async fn to_show() -> Result<(), Box<dyn Error>> {
+    let t = get_cids().await?;
+    let tips = "cid  \t 专辑名\n";
+    let t = t
+        .iter()
+        .map(|(cid, name)| format!("{cid} \t {name}\n"))
+        .collect::<String>();
+    let t = tips.to_owned() + &t;
+    println!("{}", t);
+    Ok(())
+}
+
+async fn show() {
+    match to_show().await {
+        Ok(t) => t,
+        Err(e) => println!("{}", e),
+    };
+}
+
 #[tokio::main]
 async fn main() {
     let mut env = env::args();
@@ -67,10 +91,11 @@ async fn main() {
     };
     match t.as_str() {
         "help" => help(),
-        "top" => top(env.next()).await,
+        "top" => top(env).await,
         "all" => all().await,
         "sync" => sync().await,
         "repair" => repair(),
+        "show" => show().await,
         &_ => help(),
     }
 }
