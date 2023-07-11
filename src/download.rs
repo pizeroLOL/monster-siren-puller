@@ -32,7 +32,7 @@ fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(), B
 pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
     let client = reqwest::Client::builder()
         .user_agent(USER_AGENT)
-        .timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(30))
         .build()?;
     let mut t = client.get(url).send().await;
     for i in 0..3 {
