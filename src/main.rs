@@ -6,6 +6,7 @@ use std::{
 use monster_siren_puller::{
     self,
     download::{download_all, download_sync, download_top, get_cids},
+    repair,
 };
 
 fn help() {
@@ -24,6 +25,13 @@ show  \t展示专辑 cid 和对应名称
     )
 }
 
+async fn try_or_eprintln(f: Result<(), Box<dyn Error>>) {
+    match f {
+        Ok(t) => t,
+        Err(e) => println!("{}", e),
+    };
+}
+
 async fn top(num: Args) {
     let mut num = num;
     let Some(num)  = num.next() else{
@@ -32,35 +40,12 @@ async fn top(num: Args) {
     };
 
     if let Ok(num) = num.parse::<usize>() {
-        match download_top(num).await {
-            Ok(t) => t,
-            Err(e) => println!("{}", e),
-        };
+        let re = download_top(num).await;
+        try_or_eprintln(re).await;
     } else {
         println!("请输入数字");
         help();
     }
-}
-
-async fn all() {
-    match download_all().await {
-        Ok(t) => t,
-        Err(e) => println!("{}", e),
-    };
-}
-
-async fn sync() {
-    match download_sync().await {
-        Ok(t) => t,
-        Err(e) => println!("{}", e),
-    };
-}
-
-fn repair() {
-    match monster_siren_puller::repair() {
-        Ok(t) => t,
-        Err(e) => println!("{}", e),
-    };
 }
 
 async fn to_show() -> Result<(), Box<dyn Error>> {
@@ -75,13 +60,6 @@ async fn to_show() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn show() {
-    match to_show().await {
-        Ok(t) => t,
-        Err(e) => println!("{}", e),
-    };
-}
-
 #[tokio::main]
 async fn main() {
     let mut env = env::args();
@@ -92,10 +70,22 @@ async fn main() {
     match t.as_str() {
         "help" => help(),
         "top" => top(env).await,
-        "all" => all().await,
-        "sync" => sync().await,
-        "repair" => repair(),
-        "show" => show().await,
+        "all" => {
+            let re = download_all().await;
+            try_or_eprintln(re).await
+        }
+        "sync" => {
+            let re = download_sync().await;
+            try_or_eprintln(re).await
+        }
+        "repair" => {
+            let re = repair();
+            try_or_eprintln(re).await
+        }
+        "show" => {
+            let re = to_show().await;
+            try_or_eprintln(re).await
+        }
         &_ => help(),
     }
 }
