@@ -51,4 +51,10 @@ impl Index {
     pub fn get_name(&self) -> &str {
         &self.name
     }
+    pub fn get_cover_url(&self) -> &str {
+        &self.coverUrl
+    }
+    pub fn get_artistes(&self) -> &Vec<String> {
+        &self.artistes
+    }
 }
