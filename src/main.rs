@@ -37,7 +37,7 @@ async fn main() {
             Cmd::try_or_eprintln(re)
         }
         "album" => {
-            let re = Album::album(env).await;
+            let re = Album::main(env).await;
             Cmd::try_or_eprintln(re)
         }
         &_ => Cmd::help(),

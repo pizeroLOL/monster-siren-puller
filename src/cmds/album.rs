@@ -5,25 +5,26 @@ use monster_siren_puller::album_detail::{get_album, SongIndex};
 pub struct Album;
 
 impl Album {
-    pub async fn album(env: Args) -> Result<(), Box<dyn Error>> {
+    pub async fn main(env: Args) -> Result<(), Box<dyn Error>> {
         let mut env = env;
         let subcmd;
         if let Some(cmd) = env.next() {
             subcmd = cmd;
         } else {
-            Self::album_help();
+            Self::help();
             return Err("No subcmd".into());
         };
         let subcmd = subcmd.as_str();
         match subcmd {
-            "help" => Self::album_help(),
-            "about" => Self::album_about(env).await?,
-            _ => Self::album_help(),
+            "help" => Self::help(),
+            "about" => Self::about(env).await?,
+            "show" => Self::show(env).await?,
+            _ => Self::help(),
         };
         Ok(())
     }
 
-    fn album_song_fmt(song: &Vec<SongIndex>) -> String {
+    fn about_song_fmt(song: &Vec<SongIndex>) -> String {
         song.iter()
             .map(|songs| {
                 let name = songs.get_name();
@@ -38,13 +39,13 @@ impl Album {
             .collect::<String>()
     }
 
-    pub async fn album_about(env: Args) -> Result<(), Box<dyn Error>> {
+    async fn about(env: Args) -> Result<(), Box<dyn Error>> {
         let cid;
         let mut env = env;
         if let Some(cmd) = env.next() {
             cid = cmd;
         } else {
-            Self::album_help();
+            Self::help();
             return Err("No cid".into());
         };
         let album = get_album(&cid).await?;
@@ -57,7 +58,7 @@ impl Album {
             .collect::<String>();
         let album_cover_url = album.get_cover_url();
         let album_cover_de_url = album.get_cover_de_url();
-        let album_songs = Self::album_song_fmt(album.get_songs());
+        let album_songs = Self::about_song_fmt(album.get_songs());
         let output = format!(
             "
 名称: {album_name}
@@ -70,7 +71,28 @@ impl Album {
         Ok(())
     }
 
-    fn album_help() {
+    async fn show(env: Args) -> Result<(), Box<dyn Error>> {
+        let mut env = env;
+        let cid;
+        if let Some(cmd) = env.next() {
+            cid = cmd;
+        } else {
+            Self::help();
+            return Err("No subcmd".into());
+        };
+
+        let album = get_album(&cid).await?;
+        let songs = album
+            .to_album()
+            .get_songs()
+            .iter()
+            .map(|song| format!("{} \t {} \n", song.get_cid(), song.get_name()))
+            .collect::<String>();
+        println!("cid \t 名称\n{}",songs);
+        Ok(())
+    }
+
+    fn help() {
         println!(
             "
 moster-siren-puller album [about|help]
@@ -78,7 +100,7 @@ moster-siren-puller album [list|get] <cid>
 
 help \t获取该消息
 about\t显示专辑相关信息
-list \t获取专辑下的歌曲列表（TODO）
+show \t获取专辑下的歌曲列表
 get  \t下载专辑（TODO）
         "
         )
