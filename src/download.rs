@@ -124,7 +124,7 @@ pub async fn download_all() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box<dyn Error>> {
+pub async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box<dyn Error>> {
     let data = get_album(cid).await?;
     let data = data.to_album();
     println!("start {}", data.get_name());
