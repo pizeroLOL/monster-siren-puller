@@ -2,7 +2,7 @@ use std::{env::Args, error::Error};
 
 use monster_siren_puller::download::{download_top, get_cids};
 
-pub struct Cmd();
+pub struct Cmd;
 
 impl Cmd {
     pub fn help() {

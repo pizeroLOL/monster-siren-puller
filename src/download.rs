@@ -51,6 +51,7 @@ pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
     return Err("逻辑错误".into());
 }
 
+/// 获取所有专辑的 cid
 pub async fn get_cids() -> Result<Vec<(String, String)>, Box<dyn Error>> {
     let t = get_albums_index().await?;
     let t = t.to_index_list();
@@ -63,6 +64,7 @@ pub async fn get_cids() -> Result<Vec<(String, String)>, Box<dyn Error>> {
     // println!("{:?}",download_map);
 }
 
+/// 以并行的方式获取所有的的专辑
 pub async fn dont_use_download_all() -> Result<(), Box<dyn Error>> {
     let dir = Path::new("./siren");
     let download_map = get_cids().await?;
@@ -75,6 +77,9 @@ pub async fn dont_use_download_all() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// 下载前几个的专辑
+///
+/// top：下载的数量
 pub async fn download_top(top: usize) -> Result<(), Box<dyn Error>> {
     let dir = Path::new("./siren");
     let download_map = get_cids().await?;
@@ -89,6 +94,7 @@ pub async fn download_top(top: usize) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// 下载缺失的专辑
 pub async fn download_sync() -> Result<(), Box<dyn Error>> {
     let dir = Path::new("./siren");
     if !dir.try_exists()? {
@@ -115,6 +121,7 @@ pub async fn download_sync() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// 以遍历的方式下载所有专辑
 pub async fn download_all() -> Result<(), Box<dyn Error>> {
     let download_map = get_cids().await?;
     let dir = Path::new("./siren");
@@ -124,6 +131,13 @@ pub async fn download_all() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// # 下载所有专辑
+///
+/// ## 参数
+///
+/// - cid：专辑编号
+/// - dir：专辑文件夹所在的地址
+/// - dir_name：专辑名称
 pub async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box<dyn Error>> {
     let data = get_album(cid).await?;
     let data = data.to_album();
@@ -142,6 +156,13 @@ pub async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(),
     Ok(())
 }
 
+/// # 下载专辑头图
+///
+/// ## 参数
+///
+/// - url：专辑地址
+/// - name：重命名的名称（不包括后缀）
+/// - dir：专辑的地址
 async fn head_download(url: &str, name: &str, dir: &Path) -> Result<(), Box<dyn Error>> {
     let t = url.split('.').rev().collect::<Vec<&str>>();
     let t = t.first().unwrap();
@@ -163,6 +184,12 @@ async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// # 写入 info
+///
+/// ## 参数
+///
+/// - data：传入专辑类型
+/// - path：文件的地址
 async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
     let t_max = data.get_songs().len() - 1;
     let t = data
@@ -197,6 +224,12 @@ async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+/// # 下载专辑内的音乐音乐
+///
+/// ## 参数
+///
+/// - data：专辑信息
+/// - path：专辑文件夹地址
 async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
     let mut tasks = Vec::new();
     for x in data.get_songs().iter() {
@@ -209,6 +242,12 @@ async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>>
     Ok(())
 }
 
+/// # 下载单首音乐
+///
+/// ## 参数
+///
+/// - index：SongIndex，拿到地址
+/// - path：专辑文件夹地址
 async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Error>> {
     let song = get_song(index.get_cid()).await?;
     let song = song.to_song();
