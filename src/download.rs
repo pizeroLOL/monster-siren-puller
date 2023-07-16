@@ -1,6 +1,5 @@
-use crate::{
-    album_detail::Album, albums::get_albums_index, song::Song, song_index::SongIndex, USER_AGENT,
-};
+use crate::albums::AlbumIndex;
+use crate::{album_detail::Album, song::Song, song_index::SongIndex, USER_AGENT};
 use futures::future;
 use reqwest::Response;
 use std::io::Read;
@@ -48,8 +47,7 @@ pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
 
 /// 获取所有专辑的 cid
 pub async fn get_cids() -> Result<Vec<(String, String)>, Box<dyn Error>> {
-    let t = get_albums_index().await?;
-    let t = t.to_index_list();
+    let t = AlbumIndex::get().await?;
     let t: Vec<(String, String)> = t
         .iter()
         .map(|x| x.get_cid().to_string())

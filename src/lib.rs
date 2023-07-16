@@ -7,7 +7,7 @@ use std::{
 pub mod album_detail;
 pub mod albums;
 pub mod download;
-pub mod request;
+pub mod response;
 pub mod song;
 pub mod song_index;
 

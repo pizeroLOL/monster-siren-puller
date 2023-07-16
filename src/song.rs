@@ -1,4 +1,4 @@
-use crate::{download::download, request::Response, API};
+use crate::{download::download, response::Response, API};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
