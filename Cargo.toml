@@ -2,6 +2,12 @@
 name = "monster-siren-puller"
 version = "0.1.0"
 edition = "2021"
+authors = ["Pizero <zhaory200707@outlook.com>"]
+description = "A Moster Siren music downloader"
+readme = "Readme.md"
+repository = "https://jihulab.com/pizero-tools/monster-siren-puller"
+license-file = "LICENSE"
+keywords = ["mucic_download", "cli"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
