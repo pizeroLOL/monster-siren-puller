@@ -6,7 +6,7 @@ use monster_siren_puller::{
     repair,
 };
 
-use crate::cmds::{album::Album, root::Cmd};
+use crate::cmds::{album::AlbumCmd, root::Cmd};
 
 mod cmds;
 
@@ -37,7 +37,7 @@ async fn main() {
             Cmd::try_or_eprintln(re)
         }
         "album" => {
-            let re = Album::main(env).await;
+            let re = AlbumCmd::main(env).await;
             Cmd::try_or_eprintln(re)
         }
         &_ => Cmd::help(),

@@ -1,15 +1,11 @@
+use crate::{
+    album_detail::Album, albums::get_albums_index, song::Song, song_index::SongIndex, USER_AGENT,
+};
 use futures::future;
 use reqwest::Response;
 use std::io::Read;
 use std::{error::Error, fs, path::Path};
 use std::{fs::File, io::Write, thread, time::Duration};
-
-use crate::{
-    album_detail::{get_album, Album, SongIndex},
-    albums::get_albums_index,
-    song::{get_song, Song},
-    USER_AGENT,
-};
 
 fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(), Box<dyn Error>> {
     let tasks = tasks.iter().filter(|x| x.is_err()).collect::<Vec<_>>();
@@ -18,13 +14,12 @@ fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(), B
     };
     let tasks = tasks
         .iter()
-        .map(|d| {
+        .filter_map(|d| {
             if let Err(e) = d {
                 return Some(e);
             }
             None
         })
-        .filter_map(|f| f)
         .collect::<Vec<_>>();
     Err(format!("{about} : {tasks:#?}").into())
 }
@@ -48,7 +43,7 @@ pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
             }
         }
     }
-    return Err("逻辑错误".into());
+    Err("逻辑错误".into())
 }
 
 /// 获取所有专辑的 cid
@@ -106,7 +101,7 @@ pub async fn download_sync() -> Result<(), Box<dyn Error>> {
             let x = x
                 .strip_prefix("./siren/")
                 // TODO 添加错误提示
-                .expect(&format!("删除前缀错误"));
+                .unwrap_or_else(|_| panic!("删除前缀错误"));
             x.to_string_lossy().into()
         })
         .collect::<Vec<String>>();
@@ -139,8 +134,7 @@ pub async fn download_all() -> Result<(), Box<dyn Error>> {
 /// - dir：专辑文件夹所在的地址
 /// - dir_name：专辑名称
 pub async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box<dyn Error>> {
-    let data = get_album(cid).await?;
-    let data = data.to_album();
+    let data = Album::get(cid).await?;
     println!("start {}", data.get_name());
     let dir = &dir.join(dir_name.trim());
     fs::create_dir_all(dir)?;
@@ -150,8 +144,8 @@ pub async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(),
     ];
     let dl_headimg_tasks = future::join_all(dl_headimg_tasks).await;
     get_errs("download head image error", dl_headimg_tasks)?;
-    download_songs(data, dir).await?;
-    write_info(data, &dir.join("info.txt")).await?;
+    download_songs(&data, dir).await?;
+    write_info(&data, &dir.join("info.txt")).await?;
     println!("end {}", data.get_name());
     Ok(())
 }
@@ -249,8 +243,7 @@ async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>>
 /// - index：SongIndex，拿到地址
 /// - path：专辑文件夹地址
 async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Error>> {
-    let song = get_song(index.get_cid()).await?;
-    let song = song.to_song();
+    let song = Song::get(index.get_cid()).await?;
     let name = song.get_name();
     println!("  start:{}", name);
     let t = vec![
@@ -261,7 +254,7 @@ async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Err
     ];
     let mut tasks = Vec::new();
     for i in t.iter().filter(|t| t.is_some()) {
-        tasks.push(download_asset(i, path, song))
+        tasks.push(download_asset(i, path, &song))
     }
     let tasks = future::join_all(tasks).await;
     let about = format!("download {name} assets error");

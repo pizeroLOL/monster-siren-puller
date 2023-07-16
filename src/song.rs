@@ -1,34 +1,6 @@
-use std::error::Error;
-
+use crate::{download::download, request::Response, API};
 use serde::{Deserialize, Serialize};
-use tokio::runtime::Builder;
-
-use crate::{download::download, API};
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Request {
-    code: isize,
-    msg: String,
-    data: Song,
-}
-
-impl Request {
-    pub fn get(cid: &str) -> Result<Self, Box<dyn Error>> {
-        let runtime = Builder::new_multi_thread().enable_all().build()?;
-        let t = runtime.block_on(async { get_song(cid).await })?;
-        Ok(t)
-    }
-    pub fn to_song(&self) -> &Song {
-        &self.data
-    }
-}
-
-pub async fn get_song(cid: &str) -> Result<Request, Box<dyn Error>> {
-    Ok(download(&(API.to_owned() + "song/" + cid))
-        .await?
-        .json::<Request>()
-        .await?)
-}
+use std::error::Error;
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
@@ -44,6 +16,14 @@ pub struct Song {
 }
 
 impl Song {
+    pub async fn get(cid: &str) -> Result<Song, Box<dyn Error>> {
+        let o = download(&(API.to_owned() + "song/" + cid))
+            .await?
+            .json::<Response<Song>>()
+            .await?
+            .data;
+        Ok(o)
+    }
     pub fn get_name(&self) -> &str {
         &self.name
     }

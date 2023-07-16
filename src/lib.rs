@@ -7,7 +7,9 @@ use std::{
 pub mod album_detail;
 pub mod albums;
 pub mod download;
+pub mod request;
 pub mod song;
+pub mod song_index;
 
 /// 用于删除写入了一半的专辑
 ///
@@ -26,7 +28,7 @@ pub mod song;
 pub fn repair() -> Result<(), Box<dyn Error>> {
     let path = Path::new("siren");
     let dirs = read_dir(path)?
-        .map(|p| {
+        .filter_map(|p| {
             let dir = p.expect("无法读取文件夹").path();
             let file = dir.join("info.txt");
             if file.try_exists().expect("无法读取文件") {
@@ -35,7 +37,6 @@ pub fn repair() -> Result<(), Box<dyn Error>> {
                 Some(dir)
             }
         })
-        .filter_map(|d| d)
         .collect::<Vec<_>>();
     for i in dirs {
         fs::remove_dir_all(i.to_str().expect("cover_err"))?

@@ -1,13 +1,10 @@
 use std::{env::Args, error::Error, path::Path};
 
-use monster_siren_puller::{
-    album_detail::{get_album, SongIndex},
-    download::download_album,
-};
+use monster_siren_puller::{album_detail::Album, download::download_album, song_index::SongIndex};
 
-pub struct Album;
+pub struct AlbumCmd;
 
-impl Album {
+impl AlbumCmd {
     pub async fn main(env: Args) -> Result<(), Box<dyn Error>> {
         let mut env = env;
         let subcmd;
@@ -28,7 +25,7 @@ impl Album {
         Ok(())
     }
 
-    fn about_song_fmt(song: &Vec<SongIndex>) -> String {
+    fn about_song_fmt(song: &[SongIndex]) -> String {
         song.iter()
             .map(|songs| {
                 let name = songs.get_name();
@@ -52,8 +49,7 @@ impl Album {
             Self::help();
             return Err("No cid".into());
         };
-        let album = get_album(&cid).await?;
-        let album = album.to_album();
+        let album = Album::get(&cid).await?;
         let album_name = album.get_name();
         let album_intro = album
             .get_intro()
@@ -85,9 +81,8 @@ impl Album {
             return Err("No cid".into());
         };
 
-        let album = get_album(&cid).await?;
+        let album = Album::get(&cid).await?;
         let songs = album
-            .to_album()
             .get_songs()
             .iter()
             .map(|song| format!("{} \t {} \n", song.get_cid(), song.get_name()))
@@ -107,8 +102,8 @@ impl Album {
         };
         let cid = tmp;
 
-        let album = get_album(&cid).await?;
-        let dir_name = album.to_album().get_name();
+        let album = Album::get(&cid).await?;
+        let dir_name = album.get_name();
 
         download_album(&cid, Path::new("./siren/"), dir_name).await?;
 
