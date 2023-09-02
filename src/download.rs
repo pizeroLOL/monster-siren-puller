@@ -15,11 +15,9 @@ fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(), B
     };
     let tasks = tasks
         .iter()
-        .filter_map(|d| {
-            if let Err(e) = d {
-                return Some(e);
-            }
-            None
+        .filter_map(|d| match d {
+            Ok(_) => None,
+            Err(e) => Some(e),
         })
         .collect::<Vec<_>>();
     Err(format!("{about} : {tasks:#?}").into())
@@ -75,12 +73,12 @@ pub async fn dont_use_download_all() -> Result<(), Box<dyn Error>> {
 pub async fn download_top(top: usize) -> Result<(), Box<dyn Error>> {
     let dir = Path::new("./siren");
     let download_map = get_cids().await?;
-    for (cid, dir_name) in download_map
+    let tasks = download_map
         .iter()
         .enumerate()
-        .filter(|x| x.0 < top)
-        .map(|x| x.1)
-    {
+        .filter(|(index, _)| index < &top)
+        .map(|(_, key_value)| key_value);
+    for (cid, dir_name) in tasks {
         download_album(cid, dir, dir_name).await?
     }
     Ok(())
@@ -175,6 +173,18 @@ async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn format_song_artistes(name: &str, artistes: &[String], len: usize) -> String {
+    let artistes = artistes
+        .iter()
+        .enumerate()
+        .map(|(index, artist_name)| match index + 1 == len {
+            true => artist_name.to_string(),
+            false => format!("{artist_name}、"),
+        })
+        .collect::<String>();
+    format!("歌曲：{name}\t作者：{artistes}\n")
+}
+
 /// # 写入 info
 ///
 /// ## 参数
@@ -182,25 +192,11 @@ async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
 /// - data：传入专辑类型
 /// - path：文件的地址
 async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
-    let t_max = data.get_songs().len() - 1;
-    let t = data
-        .get_songs()
+    let songs = data.get_songs();
+    let t_max = songs.len();
+    let t = songs
         .iter()
-        .map(|x| {
-            let t = x
-                .get_artistes()
-                .iter()
-                .enumerate()
-                .map(|x| {
-                    if x.0 == t_max {
-                        x.1.to_owned()
-                    } else {
-                        x.1.to_owned() + "、"
-                    }
-                })
-                .collect::<String>();
-            format!("歌曲：{}\t作者：{}\n", x.get_name(), t)
-        })
+        .map(|x| format_song_artistes(x.get_name(), x.get_artistes(), t_max))
         .collect::<String>();
     let t = format!(
         "专辑名：{}\n简介：{}\n{}",
@@ -223,7 +219,7 @@ async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
 /// - path：专辑文件夹地址
 async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
     let mut tasks = Vec::new();
-    for x in data.get_songs().iter() {
+    for x in data.get_songs() {
         tasks.push(download_song(x, path));
     }
     let tasks = future::join_all(tasks).await;
@@ -243,7 +239,7 @@ async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Err
     let song = Song::get(index.get_cid()).await?;
     let name = song.get_name();
     println!("  start:{}", name);
-    let t = vec![
+    let t = [
         song.get_source_url(),
         song.get_lyric_url(),
         song.get_mv_url(),
