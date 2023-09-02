@@ -281,39 +281,28 @@ mod test {
 
     use super::download_file;
     use std::{path::Path, thread, time::Duration};
-    use tokio::runtime::Builder;
-    #[test]
-    fn t() {
-        let runtime = Builder::new_multi_thread().enable_all().build().unwrap();
-        runtime
-            .block_on(async {
-                download_file(
-                    "https://web.hycdn.cn/siren/pic/20230427/840c552b50612166caa8ee52ac7f6654.jpg",
-                    Path::new("./hi.jpg"),
-                )
-                .await
-            })
-            .unwrap();
+
+    #[tokio::test]
+    async fn t() {
+        let path = "https://web.hycdn.cn/siren/pic/20230427/840c552b50612166caa8ee52ac7f6654.jpg";
+        download_file(path, Path::new("./hi.jpg")).await.unwrap()
     }
-    #[test]
-    fn x() {
-        let runtime = Builder::new_multi_thread().enable_all().build().unwrap();
-        runtime.block_on(async {
-            let client = reqwest::Client::builder()
-                .user_agent(USER_AGENT)
-                .timeout(Duration::from_secs(10))
-                .build()
-                .unwrap();
-            let mut t = client.get("http://127.0.0.1:8000").send().await;
-            let mut tmp = 0;
-            let count = 3;
-            while t.is_err() && count > tmp {
-                println!("testing");
-                tmp += 1;
-                t = client.get("http://127.0.0.1:8000").send().await;
-                thread::sleep(Duration::from_secs(1))
-            }
-            println!("{:?}", t)
-        });
+    #[tokio::test]
+    async fn x() {
+        let client = reqwest::Client::builder()
+            .user_agent(USER_AGENT)
+            .timeout(Duration::from_secs(10))
+            .build()
+            .unwrap();
+        let mut t = client.get("http://127.0.0.1:8000").send().await;
+        let mut tmp = 0;
+        let count = 3;
+        while t.is_err() && count > tmp {
+            println!("testing");
+            tmp += 1;
+            t = client.get("http://127.0.0.1:8000").send().await;
+            thread::sleep(Duration::from_secs(1))
+        }
+        println!("{:?}", t)
     }
 }
