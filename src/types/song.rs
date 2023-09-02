@@ -18,7 +18,7 @@ pub struct Song {
 
 impl Song {
     pub fn get_url(cid: &str) -> String {
-        format!("{API}songs/{cid}")
+        format!("{API}song/{cid}")
     }
     pub async fn get(cid: &str) -> Result<Song, Box<dyn Error>> {
         let url = Self::get_url(cid);
