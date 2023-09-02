@@ -29,9 +29,9 @@ impl Cmd {
     }
     pub async fn top(num: Args) {
         let mut num = num;
-        let Some(num)  = num.next() else{
+        let Some(num) = num.next() else {
             println!("缺少前top 后参数");
-            return Self::help()
+            return Self::help();
         };
 
         if let Ok(num) = num.parse::<usize>() {

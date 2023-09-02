@@ -15,7 +15,7 @@ async fn main() {
     let mut env = env::args();
     env.next();
     let Some(t) = env.next() else {
-        return Cmd::help()
+        return Cmd::help();
     };
     match t.as_str() {
         "help" => Cmd::help(),
