@@ -21,9 +21,8 @@ pub mod types;
 /// assert!(!dir.exists());
 ///
 /// ```
-pub fn repair() -> Result<(), Box<dyn Error>> {
-    let path = Path::new("siren");
-    let dirs = read_dir(path)?
+pub fn repair(dir: &Path) -> Result<(), Box<dyn Error>> {
+    let dirs = read_dir(dir)?
         .filter_map(|p| {
             let dir = p.expect("无法读取文件夹").path();
             let file = dir.join("info.txt");

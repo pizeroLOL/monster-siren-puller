@@ -70,8 +70,7 @@ pub async fn dont_use_download_all() -> Result<(), Box<dyn Error>> {
 /// 下载前几个的专辑
 ///
 /// top：下载的数量
-pub async fn download_top(top: usize) -> Result<(), Box<dyn Error>> {
-    let dir = Path::new("./siren");
+pub async fn download_top(dir: &Path, top: usize) -> Result<(), Box<dyn Error>> {
     let download_map = get_cids().await?;
     let tasks = download_map
         .iter()
@@ -85,8 +84,7 @@ pub async fn download_top(top: usize) -> Result<(), Box<dyn Error>> {
 }
 
 /// 下载缺失的专辑
-pub async fn download_sync() -> Result<(), Box<dyn Error>> {
-    let dir = Path::new("./siren");
+pub async fn download_sync(dir: &Path) -> Result<(), Box<dyn Error>> {
     if !dir.try_exists()? {
         fs::create_dir_all(dir)?
     }
@@ -112,9 +110,8 @@ pub async fn download_sync() -> Result<(), Box<dyn Error>> {
 }
 
 /// 以遍历的方式下载所有专辑
-pub async fn download_all() -> Result<(), Box<dyn Error>> {
+pub async fn download_all(dir: &Path) -> Result<(), Box<dyn Error>> {
     let download_map = get_cids().await?;
-    let dir = Path::new("./siren");
     for (cid, dir_name) in download_map {
         download_album(&cid, dir, &dir_name).await?;
     }

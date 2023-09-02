@@ -4,10 +4,9 @@ use std::path::PathBuf;
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    /// 将日志调整到 Debug 模式
-    #[arg(long, value_name = "BOOL")]
-    pub debug: Option<bool>,
-
+    // /// 将日志调整到 Debug 模式
+    // #[arg(long, value_name = "BOOL")]
+    // pub debug: Option<bool>,
     /// 下载到指定文件夹
     #[arg(short, long, value_name = "DIR_PATH")]
     pub dir: Option<PathBuf>,

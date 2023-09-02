@@ -59,11 +59,11 @@ impl AlbumCmd {
         Ok(())
     }
 
-    pub async fn get(cid: usize) -> Result<(), Box<dyn Error>> {
+    pub async fn get(dir: &Path, cid: usize) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
         let album = Album::get(&cid).await?;
         let dir_name = album.get_name();
-        download_album(&cid, Path::new("./siren/"), dir_name).await?;
+        download_album(&cid, dir, dir_name).await?;
         Ok(())
     }
 }
