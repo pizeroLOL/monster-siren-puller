@@ -1,6 +1,6 @@
-use std::{env::Args, error::Error};
-
+use super::try_or_eprintln::TryOrEPrintln;
 use monster_siren_puller::download::{download_top, get_cids};
+use std::{env::Args, error::Error};
 
 pub struct Cmd;
 
@@ -21,12 +21,6 @@ impl Cmd {
             "
         )
     }
-    pub fn try_or_eprintln(f: Result<(), Box<dyn Error>>) {
-        match f {
-            Ok(t) => t,
-            Err(e) => println!("{}", e),
-        };
-    }
     pub async fn top(num: Args) {
         let mut num = num;
         let Some(num) = num.next() else {
@@ -34,12 +28,12 @@ impl Cmd {
             return Self::help();
         };
 
-        if let Ok(num) = num.parse::<usize>() {
-            let re = download_top(num).await;
-            Self::try_or_eprintln(re);
-        } else {
-            println!("请输入数字");
-            Self::help();
+        match num.parse::<usize>() {
+            Ok(num) => download_top(num).await.try_or_eprintln(),
+            Err(e) => {
+                println!("{e}\n请输入数字");
+                Self::help();
+            }
         }
     }
     pub async fn to_show() -> Result<(), Box<dyn Error>> {
