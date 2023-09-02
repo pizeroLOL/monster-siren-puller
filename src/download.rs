@@ -1,5 +1,7 @@
-use crate::albums::AlbumIndex;
-use crate::{album_detail::Album, song::Song, song_index::SongIndex, USER_AGENT};
+use crate::{
+    types::{Album, AlbumIndex, Song, SongIndex},
+    USER_AGENT,
+};
 use futures::future;
 use reqwest::Response;
 use std::io::Read;
@@ -29,20 +31,17 @@ pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
         .timeout(Duration::from_secs(30))
         .build()?;
     let mut t = client.get(url).send().await;
-    for i in 0..3 {
+    for _ in 0..3 {
         match t {
             Ok(it) => return Ok(it),
-            Err(err) => {
-                if i >= 2 {
-                    return Err(err.into());
-                }
-                t = client.get(url).send().await;
+            Err(_) => {
                 thread::sleep(Duration::from_secs(5));
+                t = client.get(url).send().await;
                 continue;
             }
         }
     }
-    Err("逻辑错误".into())
+    Ok(t?)
 }
 
 /// 获取所有专辑的 cid

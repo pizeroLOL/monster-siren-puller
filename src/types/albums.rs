@@ -1,7 +1,10 @@
 use std::error::Error;
 
-use crate::{download::download, response::Response, API};
 use serde::{Deserialize, Serialize};
+
+use crate::{download::download, API};
+
+use super::response::Response;
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -13,8 +16,12 @@ pub struct AlbumIndex {
 }
 
 impl AlbumIndex {
+    pub fn get_url() -> String {
+        format!("{API}albums/")
+    }
     pub async fn get() -> Result<Vec<AlbumIndex>, Box<dyn Error>> {
-        let o = download(&(API.to_owned() + "albums/"))
+        let url = Self::get_url();
+        let o = download(&url)
             .await?
             .json::<Response<Vec<AlbumIndex>>>()
             .await?

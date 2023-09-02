@@ -1,6 +1,9 @@
 use std::{env::Args, error::Error, path::Path};
 
-use monster_siren_puller::{album_detail::Album, download::download_album, song_index::SongIndex};
+use monster_siren_puller::{
+    download::download_album,
+    types::{Album, SongIndex},
+};
 
 pub struct AlbumCmd;
 

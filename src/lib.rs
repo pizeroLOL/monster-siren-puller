@@ -4,12 +4,8 @@ use std::{
     path::Path,
 };
 
-pub mod album_detail;
-pub mod albums;
+pub mod types;
 pub mod download;
-pub mod response;
-pub mod song;
-pub mod song_index;
 
 /// 用于删除写入了一半的专辑
 ///
