@@ -1,29 +1,44 @@
-use crate::cmds::{album::AlbumCmd, root::Cmd};
-use cmds::try_or_eprintln::TryOrEPrintln;
+mod cmds;
+
+use crate::cmds::album::AlbumCmd;
+use ::clap::Parser;
+use cmds::{
+    clap::{AlbumCommand, Cli, Commands},
+    try_or_eprintln::OkOrEPrintln,
+};
 use monster_siren_puller::{
     self,
-    download::{download_all, download_sync},
+    download::{download_all, download_sync, download_top, get_cids},
     repair,
 };
-use std::env;
-
-mod cmds;
+use std::error::Error;
 
 #[tokio::main]
 async fn main() {
-    let mut env = env::args();
-    env.next();
-    let Some(t) = env.next() else {
-        return Cmd::help();
-    };
-    match t.as_str() {
-        "help" => Cmd::help(),
-        "top" => Cmd::top(env).await,
-        "all" => download_all().await.try_or_eprintln(),
-        "sync" => download_sync().await.try_or_eprintln(),
-        "repair" => repair().try_or_eprintln(),
-        "show" => Cmd::to_show().await.try_or_eprintln(),
-        "album" => AlbumCmd::main(env).await.try_or_eprintln(),
-        &_ => Cmd::help(),
+    let cli = Cli::parse();
+    match cli.command {
+        Commands::Top { index } => download_top(index).await.ok_or_eprintln(),
+        Commands::All => download_all().await.ok_or_eprintln(),
+        Commands::Sync => download_sync().await.ok_or_eprintln(),
+        Commands::Repair => repair().ok_or_eprintln(),
+        Commands::Show => to_show().await.ok_or_eprintln(),
+        Commands::Album { cid, command } => album(cid, command).await,
     }
+}
+
+async fn album(cid: usize, cmd: AlbumCommand) {
+    match cmd {
+        AlbumCommand::About => AlbumCmd::about(cid).await.ok_or_eprintln(),
+        AlbumCommand::Show => AlbumCmd::show(cid).await.ok_or_eprintln(),
+        AlbumCommand::Get => AlbumCmd::get(cid).await.ok_or_eprintln(),
+    };
+}
+
+async fn to_show() -> Result<(), Box<dyn Error>> {
+    let t = get_cids().await?;
+    println!("索引 \t cid \t 专辑名");
+    t.iter()
+        .enumerate()
+        .for_each(|(index, (cid, name))| println!("{index} \t {cid} \t {name}"));
+    Ok(())
 }

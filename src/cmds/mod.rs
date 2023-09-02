@@ -1,3 +1,3 @@
 pub mod album;
-pub mod root;
+pub mod clap;
 pub mod try_or_eprintln;
