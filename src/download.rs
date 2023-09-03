@@ -109,6 +109,31 @@ pub async fn download_sync(dir: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+pub async fn slow_download_sync(dir: &Path) -> Result<(), Box<dyn Error>> {
+    if !dir.try_exists()? {
+        fs::create_dir_all(dir)?
+    }
+    let dirs = fs::read_dir(dir)?
+        .map(|x| {
+            let x = x.expect("无法读取文件夹").path();
+            let x = x
+                .strip_prefix("./siren/")
+                // TODO 添加错误提示
+                .unwrap_or_else(|_| panic!("删除前缀错误"));
+            x.to_string_lossy().into()
+        })
+        .collect::<Vec<String>>();
+    let download_map = get_cids().await?;
+    for (cid, dir_name) in download_map {
+        if dirs.contains(&dir_name.trim().to_string()) {
+            println!("skip {}", dir_name);
+            continue;
+        }
+        slow_download_album(&cid, dir, &dir_name).await?;
+    }
+    Ok(())
+}
+
 /// 以遍历的方式下载所有专辑
 pub async fn download_all(dir: &Path) -> Result<(), Box<dyn Error>> {
     let download_map = get_cids().await?;
@@ -139,6 +164,43 @@ pub async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(),
     download_songs(&data, dir).await?;
     write_info(&data, &dir.join("info.txt")).await?;
     println!("end {}", data.get_name());
+    Ok(())
+}
+
+pub async fn slow_download_album(
+    cid: &str,
+    dir: &Path,
+    dir_name: &str,
+) -> Result<(), Box<dyn Error>> {
+    let data = Album::get(cid).await?;
+    println!("start {}", data.get_name());
+    let dir = &dir.join(dir_name.trim());
+    fs::create_dir_all(dir)?;
+    let dl_headimg_tasks = vec![
+        head_download(data.get_cover_url(), "head.", dir).await,
+        head_download(data.get_cover_de_url(), "wide_head.", dir).await,
+    ];
+    let err = get_errs("download head image error", dl_headimg_tasks).err();
+    match err {
+        Some(e) => eprintln!("{e}"),
+        None => (),
+    };
+    slow_download_songs(&data, dir).await?;
+    write_info(&data, &dir.join("info.txt")).await?;
+    println!("end {}", data.get_name());
+    Ok(())
+}
+
+async fn slow_download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
+    let mut tasks = Vec::new();
+    for x in data.get_songs() {
+        tasks.push(download_song(x, path).await);
+    }
+    // let tasks = future::join_all(tasks).await;
+    let name = data.get_name();
+    let err_about = format!("download {name} error");
+    get_errs(&err_about, tasks)?;
+
     Ok(())
 }
 
@@ -234,18 +296,19 @@ async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>>
 /// - path：专辑文件夹地址
 async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Error>> {
     let song = Song::get(index.get_cid()).await?;
-    let name = song.get_name();
+    // // 对 NTFS 兼容
+    let name = song.get_name().replace(['\\', '/', '.', '?', '*', ':'], "");
     println!("  start:{}", name);
-    let t = [
+    let tasks = [
         song.get_source_url(),
         song.get_lyric_url(),
         song.get_mv_url(),
         song.get_mv_cover_url(),
-    ];
-    let mut tasks = Vec::new();
-    for i in t.iter().filter(|t| t.is_some()) {
-        tasks.push(download_asset(i, path, &song))
-    }
+    ]
+    .into_iter()
+    .flatten()
+    .map(|i| download_asset(i, path, &song));
+
     let tasks = future::join_all(tasks).await;
     let about = format!("download {name} assets error");
     get_errs(&about, tasks)?;
@@ -253,18 +316,23 @@ async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Err
     Ok(())
 }
 
-async fn download_asset(
-    item: &Option<String>,
-    path: &Path,
-    song: &Song,
-) -> Result<(), Box<dyn Error>> {
-    let i = item.clone().unwrap();
-    let t = i.split('.').rev().collect::<Vec<&str>>();
-    download_file(
-        &i,
-        &path.join(song.get_name().trim().to_owned() + "." + t.first().unwrap()),
-    )
-    .await?;
+// async fn download_single_song() {
+
+// }
+
+async fn download_asset(item: &String, path: &Path, song: &Song) -> Result<(), Box<dyn Error>> {
+    let t = item.split('.').next_back();
+    let song = song
+        .get_name()
+        .trim()
+        .to_owned()
+        .replace(['\\', '/', '.', '?', '*', ':'], "");
+    let file_name = match t {
+        Some(t) => format!("{song}.{t}"),
+        None => song,
+    };
+    let path = &path.join(file_name);
+    download_file(&item, path).await?;
     Ok(())
 }
 

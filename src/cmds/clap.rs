@@ -18,13 +18,17 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     /// 获取前 <INDEX> 个专辑
-    Top { index: usize },
+    Top {
+        index: usize,
+    },
 
     /// 获取所有专辑
     All,
 
     /// 获取未下载专辑
     Sync,
+
+    SlowSync,
 
     /// 删除下载了一半的专辑
     Repair,

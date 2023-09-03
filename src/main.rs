@@ -8,7 +8,7 @@ use cmds::{
 };
 use monster_siren_puller::{
     self,
-    download::{download_all, download_sync, download_top, get_cids},
+    download::{download_all, download_sync, download_top, get_cids, slow_download_sync},
     repair,
 };
 use std::{error::Error, path::Path};
@@ -23,6 +23,7 @@ async fn main() {
         Commands::Top { index } => download_top(dir, index).await.ok_or_eprintln(),
         Commands::All => download_all(dir).await.ok_or_eprintln(),
         Commands::Sync => download_sync(dir).await.ok_or_eprintln(),
+        Commands::SlowSync => slow_download_sync(dir).await.ok_or_eprintln(),
         Commands::Repair => repair(dir).ok_or_eprintln(),
         Commands::Show => to_show().await.ok_or_eprintln(),
         Commands::Album { cid, command } => album(dir, cid, command).await,
