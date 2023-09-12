@@ -1,9 +1,8 @@
 use std::{error::Error, path::Path};
 
-use monster_siren_puller::{
-    download::download_album,
-    types::{Album, SongIndex},
-};
+use monster_siren_puller::types::{Album, SongIndex};
+
+use crate::download_task::Task;
 
 pub struct AlbumCmd;
 
@@ -25,7 +24,10 @@ impl AlbumCmd {
 
     pub async fn about(cid: usize) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
-        let album = Album::get(&cid).await?;
+        let album = Task::new(Path::new("."))
+            .get_album(&cid.to_string())
+            .await
+            .map_err(|e| format!("{e:?}"))?;
         let album_name = album.get_name();
         let album_intro = album
             .get_intro()
@@ -49,7 +51,11 @@ impl AlbumCmd {
 
     pub async fn show(cid: usize) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
-        let album = Album::get(&cid).await?;
+        // let album = Album::get(&cid).await?;
+        let album = Task::new(Path::new("."))
+            .get_album(&cid.to_string())
+            .await
+            .map_err(|e| format!("{e:?}"))?;
         let songs = album
             .get_songs()
             .iter()
@@ -61,9 +67,13 @@ impl AlbumCmd {
 
     pub async fn get(dir: &Path, cid: usize) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
-        let album = Album::get(&cid).await?;
+        let album = Task::new(Path::new("."))
+            .get_album(&cid)
+            .await
+            .map_err(|e| format!("{e:?}"))?;
         let dir_name = album.get_name();
-        download_album(&cid, dir, dir_name).await?;
-        Ok(())
+        // download_album(&cid, dir, dir_name).await?;
+        // Ok(())
+        todo!()
     }
 }
