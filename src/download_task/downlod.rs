@@ -3,11 +3,13 @@ use super::{Task, TaskError, REPLACE};
 impl<'a> Task<'a> {
     pub async fn download_all(&self) -> Result<(), TaskError> {
         let tasks = self.get_cids().await?;
-        tokio::fs::create_dir_all(self.path.as_path()).await.map_err(|e| TaskError::CreateDir(e))?;
+        tokio::fs::create_dir_all(self.path.as_path())
+            .await
+            .map_err(TaskError::CreateDir)?;
         for (cid, name) in tasks {
             self.download_album(&cid, &name).await?
         }
-        
+
         Ok(())
     }
 
@@ -17,17 +19,16 @@ impl<'a> Task<'a> {
         let dir = dir.as_path();
         tokio::fs::create_dir_all(dir)
             .await
-            .map_err(|e| TaskError::CreateDir(e))?;
-        let mut album_task = self.clone().set_path(dir);
+            .map_err(TaskError::CreateDir)?;
+        let album_task = self.set_path(dir);
         let album = self.get_album(cid).await?;
         let mut img_task = Vec::new();
-        for (name,url) in [
+        for (name, url) in [
             ("head", album.get_cover_url()),
             ("wide_head", album.get_cover_de_url()),
-        ]
-        {
-         img_task.push(self.get_write_url(url, name));
-        };
+        ] {
+            img_task.push(self.get_write_url(url, name));
+        }
         let re = futures::future::join_all(img_task)
             .await
             .into_iter()
@@ -37,13 +38,18 @@ impl<'a> Task<'a> {
             return Err(TaskError::DownloadImage(re));
         }
 
-        let songs = album.get_songs()
+        let songs = album
+            .get_songs()
             .iter()
             .map(|song| album_task.download_album_song(song.get_cid()))
             .collect::<Vec<_>>();
-        let tasks = futures::future::join_all(songs).await.into_iter().filter_map(|e| e.err()).collect::<Vec<_>>();
+        let tasks = futures::future::join_all(songs)
+            .await
+            .into_iter()
+            .filter_map(|e| e.err())
+            .collect::<Vec<_>>();
         if !tasks.is_empty() {
-            return Err(TaskError::DownloadSongs(tasks))            
+            return Err(TaskError::DownloadSongs(tasks));
         }
 
         Ok(())

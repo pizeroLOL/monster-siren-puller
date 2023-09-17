@@ -8,7 +8,7 @@ impl<'a> Task<'a> {
             .user_agent(self.ua)
             .timeout(self.timeout)
             .build()
-            .map_err( TaskError::GenClient)
+            .map_err(TaskError::GenClient)
     }
 
     async fn get_json<T>(&self, url: &str) -> Result<T, TaskError>
@@ -20,11 +20,8 @@ impl<'a> Task<'a> {
             .get(url)
             .send()
             .await
-            .map_err( TaskError::SendData)?;
-        let data = rsp
-            .json::<T>()
-            .await
-            .map_err(TaskError::Deserialize)?;
+            .map_err(TaskError::SendData)?;
+        let data = rsp.json::<T>().await.map_err(TaskError::Deserialize)?;
         Ok(data)
     }
 
@@ -64,7 +61,7 @@ impl<'a> Task<'a> {
             .map_err(TaskError::SendData)?
             .bytes()
             .await
-            .map_err( TaskError::Deserialize)?;
+            .map_err(TaskError::Deserialize)?;
         Ok(bytes)
     }
 }

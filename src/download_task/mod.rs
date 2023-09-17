@@ -29,7 +29,7 @@ pub enum TaskError {
     Write(std::io::Error),
     DownloadSongAssest(Vec<TaskError>),
     DownloadImage(Vec<TaskError>),
-    DownloadSongs(Vec<TaskError>)
+    DownloadSongs(Vec<TaskError>),
 }
 
 impl<'a> Task<'a> {
