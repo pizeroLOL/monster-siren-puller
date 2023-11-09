@@ -1,6 +1,9 @@
-use crate::{download::download, response::Response, song_index::SongIndex, API};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+
+use crate::{download::download, API};
+
+use super::{response::Response, song_index::SongIndex};
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
@@ -14,12 +17,12 @@ pub struct Album {
 }
 
 impl Album {
+    pub fn get_url(cid: &str) -> String {
+        format!("{API}album/{cid}/detail")
+    }
     pub async fn get(cid: &str) -> Result<Album, Box<dyn Error>> {
-        let o = download(&(API.to_owned() + "album/" + cid + "/detail"))
-            .await?
-            .json::<Response<Album>>()
-            .await?
-            .data;
+        let url = Self::get_url(cid);
+        let o = download(&url).await?.json::<Response<Album>>().await?.data;
         Ok(o)
     }
     pub fn get_name(&self) -> &str {
