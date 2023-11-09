@@ -1,4 +1,5 @@
-use crate::{download::download, response::Response, API};
+use super::response::Response;
+use crate::{download::download, API};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
@@ -16,12 +17,12 @@ pub struct Song {
 }
 
 impl Song {
+    pub fn get_url(cid: &str) -> String {
+        format!("{API}song/{cid}")
+    }
     pub async fn get(cid: &str) -> Result<Song, Box<dyn Error>> {
-        let o = download(&(API.to_owned() + "song/" + cid))
-            .await?
-            .json::<Response<Song>>()
-            .await?
-            .data;
+        let url = Self::get_url(cid);
+        let o = download(&url).await?.json::<Response<Song>>().await?.data;
         Ok(o)
     }
     pub fn get_name(&self) -> &str {

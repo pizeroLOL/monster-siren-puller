@@ -4,12 +4,8 @@ use std::{
     path::Path,
 };
 
-pub mod album_detail;
-pub mod albums;
 pub mod download;
-pub mod response;
-pub mod song;
-pub mod song_index;
+pub mod types;
 
 /// 用于删除写入了一半的专辑
 ///
@@ -25,9 +21,8 @@ pub mod song_index;
 /// assert!(!dir.exists());
 ///
 /// ```
-pub fn repair() -> Result<(), Box<dyn Error>> {
-    let path = Path::new("siren");
-    let dirs = read_dir(path)?
+pub fn repair(dir: &Path) -> Result<(), Box<dyn Error>> {
+    let dirs = read_dir(dir)?
         .filter_map(|p| {
             let dir = p.expect("无法读取文件夹").path();
             let file = dir.join("info.txt");
