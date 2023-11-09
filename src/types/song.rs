@@ -2,7 +2,7 @@ use crate::API;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Song {
     cid: String,
     name: String,
@@ -18,8 +18,8 @@ impl Song {
     pub fn new_url(cid: &str) -> String {
         format!("{API}song/{cid}")
     }
-    pub fn get_name(&self) -> &str {
-        &self.name
+    pub fn get_name(&self) -> String {
+        self.name.to_string()
     }
     pub fn get_source_url(&self) -> &Option<String> {
         &self.sourceUrl
