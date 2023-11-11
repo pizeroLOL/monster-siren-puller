@@ -64,16 +64,17 @@ pub async fn head_download(url: &str, name: &str, dir: &Path) -> Result<(), Box<
     Ok(())
 }
 
+async fn get_file(url: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+    let x = download(url)
+        .await?
+        .bytes()
+        .await?
+        .bytes()
+        .collect::<Result<Vec<u8>, _>>()?;
+    Ok(x)
+}
+
 async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
-    async fn get_file(url: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-        let x = download(url)
-            .await?
-            .bytes()
-            .await?
-            .bytes()
-            .collect::<Result<Vec<u8>, _>>()?;
-        Ok(x)
-    }
     let mut errors = String::new();
     let mut file = File::create(path)?;
     for i in 0..3 {
