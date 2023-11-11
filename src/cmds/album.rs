@@ -1,7 +1,7 @@
 use std::{error::Error, path::Path};
 
 use monster_siren_puller::{
-    download_interface::download_album,
+    download::download_album,
     types::{Album, Response, SongIndex},
 };
 

@@ -8,7 +8,7 @@ use cmds::{
 };
 use monster_siren_puller::{
     self,
-    download_interface::{download_all, download_sync, download_top, get_cids},
+    download::{download_all, download_sync, download_top, get_cids},
     repair,
 };
 use std::{error::Error, path::Path};

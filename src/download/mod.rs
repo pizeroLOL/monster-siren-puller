@@ -1,5 +1,10 @@
+mod interface;
+
+pub mod info;
+
+pub use interface::*;
+
 use crate::{
-    download_interface::get_errs,
     types::{Album, Response as SirenResponse, Song, SongIndex},
     USER_AGENT,
 };
@@ -14,6 +19,8 @@ use std::{
     time::Duration,
 };
 
+use self::info::format_info;
+
 pub async fn download(url: &str) -> Result<Response, reqwest::Error> {
     let client = reqwest::Client::builder()
         .user_agent(USER_AGENT)
@@ -21,19 +28,15 @@ pub async fn download(url: &str) -> Result<Response, reqwest::Error> {
         .build()?;
     let mut t = client.get(url).send().await;
     for _ in 0..3 {
-        match t {
-            Ok(it) => return Ok(it),
-            Err(_) => {
-                thread::sleep(Duration::from_secs(5));
-                t = client.get(url).send().await;
-                continue;
-            }
+        if let Ok(o) = t {
+            return Ok(o);
         }
+        thread::sleep(Duration::from_secs(5));
+        t = client.get(url).send().await;
+        continue;
     }
     t
 }
-
-/// 获取所有专辑的 cid
 
 /// # 下载专辑头图
 ///
@@ -75,18 +78,6 @@ async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
     Err(errors.into())
 }
 
-pub fn format_song_artistes(name: &str, artistes: &[String], len: usize) -> String {
-    let artistes = artistes
-        .iter()
-        .enumerate()
-        .map(|(index, artist_name)| match index + 1 == len {
-            true => artist_name.to_string(),
-            false => format!("{artist_name}、"),
-        })
-        .collect::<String>();
-    format!("歌曲：{name}\t作者：{artistes}\n")
-}
-
 /// # 写入 info
 ///
 /// ## 参数
@@ -94,22 +85,8 @@ pub fn format_song_artistes(name: &str, artistes: &[String], len: usize) -> Stri
 /// - data：传入专辑类型
 /// - path：文件的地址
 pub async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
-    let songs = data.get_songs();
-    let t_max = songs.len();
-    let t = songs
-        .iter()
-        .map(|x| format_song_artistes(x.get_name(), x.get_artistes(), t_max))
-        .collect::<String>();
-    let t = format!(
-        "专辑名：{}\n简介：{}\n{}",
-        data.get_name(),
-        data.get_intro(),
-        t
-    )
-    .bytes()
-    .collect::<Vec<u8>>();
     let mut file = File::create(path)?;
-    file.write_all(&t)?;
+    file.write_all(&format_info(data).bytes().collect::<Vec<u8>>())?;
     Ok(())
 }
 

@@ -92,7 +92,7 @@ pub async fn download_all(dir: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// # 下载所有专辑
+/// # 下载专辑
 ///
 /// ## 参数
 ///
