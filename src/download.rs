@@ -4,9 +4,14 @@ use crate::{
 };
 use futures::future;
 use reqwest::Response;
-use std::io::Read;
-use std::{error::Error, fs, path::Path};
-use std::{fs::File, io::Write, thread, time::Duration};
+use std::{
+    error::Error,
+    fs::{self, File},
+    io::{Read, Write},
+    path::Path,
+    thread,
+    time::Duration,
+};
 
 fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(), Box<dyn Error>> {
     let tasks = tasks.iter().filter(|x| x.is_err()).collect::<Vec<_>>();
@@ -158,16 +163,27 @@ async fn head_download(url: &str, name: &str, dir: &Path) -> Result<(), Box<dyn 
 }
 
 async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
-    let byte = download(url)
-        .await?
-        .bytes()
-        .await?
-        .bytes()
-        .collect::<Result<Vec<_>, _>>()?;
-
+    async fn get_file(url: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+        let x = download(url)
+            .await?
+            .bytes()
+            .await?
+            .bytes()
+            .collect::<Result<Vec<u8>, _>>()?;
+        Ok(x)
+    }
+    let mut errors = String::new();
     let mut file = File::create(path)?;
-    file.write_all(&byte)?;
-    Ok(())
+    for i in 0..3 {
+        match get_file(url).await {
+            Ok(o) => {
+                file.write_all(&o)?;
+                return Ok(());
+            }
+            Err(e) => errors += &format!("[{i}] {e}\n"),
+        }
+    }
+    Err(errors.into())
 }
 
 fn format_song_artistes(name: &str, artistes: &[String], len: usize) -> String {
