@@ -1,7 +1,7 @@
 use std::{error::Error, path::Path};
 
 use monster_siren_puller::{
-    download::download_album,
+    download_interface::download_album,
     types::{Album, SongIndex},
 };
 
@@ -20,43 +20,37 @@ impl AlbumCmd {
             song.get_cid()
         )
     }
-    fn about_song_fmt(song: &[SongIndex]) -> String {
-        song.iter().map(Self::arts_format).collect()
-    }
 
     pub async fn about(cid: usize) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
         let album = Album::get(&cid).await?;
-        let album_name = album.get_name();
         let album_intro = album
             .get_intro()
             .lines()
             .map(|line| "\n\t".to_owned() + line)
             .collect::<String>();
-        let album_cover_url = album.get_cover_url();
-        let album_cover_de_url = album.get_cover_de_url();
-        let album_songs = Self::about_song_fmt(album.get_songs());
-        let output = format!(
-            "
-名称: {album_name}
-专辑说明: {album_intro}
-封面链接: {album_cover_url}
-封面展示链接: {album_cover_de_url}
-歌曲: {album_songs}"
+        let album_songs = album
+            .get_songs()
+            .iter()
+            .map(Self::arts_format)
+            .collect::<String>();
+        println!(
+            "名称: {}\n专辑说明: {album_intro}\n封面链接: {}\n封面展示链接: {}\n歌曲: {album_songs}",
+            album.get_name(),
+            album.get_cover_url(),
+            album.get_cover_de_url()
         );
-        println!("{}", output);
         Ok(())
     }
 
     pub async fn show(cid: usize) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
         let album = Album::get(&cid).await?;
-        let songs = album
-            .get_songs()
-            .iter()
-            .map(|song| song.get_cid().to_owned() + "\t" + song.get_name() + "\n")
-            .collect::<String>();
-        println!("cid \t 名称\n{}", songs);
+        let songs = album.get_songs();
+        println!("cid \t 名称");
+        for song in songs {
+            println!("{} \t {}", song.get_cid().to_owned(), song.get_name());
+        }
         Ok(())
     }
 

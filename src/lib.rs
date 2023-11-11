@@ -6,6 +6,7 @@ use std::{
 
 pub mod download;
 pub mod types;
+pub mod download_interface;
 
 /// 用于删除写入了一半的专辑
 ///

@@ -1,12 +1,12 @@
 use crate::{
-    types::{Album, AlbumIndex, Song, SongIndex},
+    types::{Album, Song, SongIndex},
     USER_AGENT,
 };
 use futures::future;
 use reqwest::Response;
 use std::{
     error::Error,
-    fs::{self, File},
+    fs::File,
     io::{Read, Write},
     path::Path,
     thread,
@@ -48,104 +48,6 @@ pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
 }
 
 /// 获取所有专辑的 cid
-pub async fn get_cids() -> Result<Vec<(String, String)>, Box<dyn Error>> {
-    let t = AlbumIndex::get().await?;
-    let t: Vec<(String, String)> = t
-        .iter()
-        .map(|x| x.get_cid().to_string())
-        .zip(t.iter().map(|y| y.get_name().to_string()))
-        .collect();
-    Ok(t)
-    // println!("{:?}",download_map);
-}
-
-/// 以并行的方式获取所有的的专辑
-pub async fn dont_use_download_all() -> Result<(), Box<dyn Error>> {
-    let dir = Path::new("./siren");
-    let download_map = get_cids().await?;
-    let dl_tasks: Vec<_> = download_map
-        .iter()
-        .map(|(cid, name)| download_album(cid, dir, name))
-        .collect();
-    let dl_tasks = future::join_all(dl_tasks).await;
-    get_errs("download album error", dl_tasks)?;
-    Ok(())
-}
-
-/// 下载前几个的专辑
-///
-/// top：下载的数量
-pub async fn download_top(dir: &Path, top: usize) -> Result<(), Box<dyn Error>> {
-    let download_map = get_cids().await?;
-    let tasks = download_map
-        .iter()
-        .enumerate()
-        .filter(|(index, _)| index < &top)
-        .map(|(_, key_value)| key_value);
-    for (cid, dir_name) in tasks {
-        download_album(cid, dir, dir_name).await?
-    }
-    Ok(())
-}
-
-/// 下载缺失的专辑
-pub async fn download_sync(dir: &Path) -> Result<(), Box<dyn Error>> {
-    if !dir.try_exists()? {
-        fs::create_dir_all(dir)?
-    }
-    let dirs = fs::read_dir(dir)?
-        .map(|x| {
-            let x = x.expect("无法读取文件夹").path();
-            let x = x
-                .strip_prefix("./siren/")
-                // TODO 添加错误提示
-                .unwrap_or_else(|_| panic!("删除前缀错误"));
-            x.to_string_lossy().into()
-        })
-        .collect::<Vec<String>>();
-    let download_map = get_cids().await?;
-    for (cid, dir_name) in download_map {
-        if dirs.contains(&dir_name.trim().to_string()) {
-            println!("skip {}", dir_name);
-            continue;
-        }
-        download_album(&cid, dir, &dir_name).await?;
-    }
-    Ok(())
-}
-
-/// 以遍历的方式下载所有专辑
-pub async fn download_all(dir: &Path) -> Result<(), Box<dyn Error>> {
-    let download_map = get_cids().await?;
-    for (cid, dir_name) in download_map {
-        download_album(&cid, dir, &dir_name).await?;
-    }
-    Ok(())
-}
-
-/// # 下载所有专辑
-///
-/// ## 参数
-///
-/// - cid：专辑编号
-/// - dir：专辑文件夹所在的地址
-/// - dir_name：专辑名称
-pub async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box<dyn Error>> {
-    let data = Album::get(cid).await?;
-    println!("start {}", data.get_name());
-    let dir = &dir.join(dir_name.trim());
-    fs::create_dir_all(dir)?;
-    let dl_headimg_tasks = vec![
-        head_download(data.get_cover_url(), "head.", dir),
-        head_download(data.get_cover_de_url(), "wide_head.", dir),
-    ];
-    let dl_headimg_tasks = future::join_all(dl_headimg_tasks).await;
-    get_errs("download head image error", dl_headimg_tasks)?;
-    download_songs(&data, dir).await?;
-    write_info(&data, &dir.join("info.txt")).await?;
-    println!("end {}", data.get_name());
-    Ok(())
-}
 
 /// # 下载专辑头图
 ///
@@ -154,7 +56,7 @@ pub async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(),
 /// - url：专辑地址
 /// - name：重命名的名称（不包括后缀）
 /// - dir：专辑的地址
-async fn head_download(url: &str, name: &str, dir: &Path) -> Result<(), Box<dyn Error>> {
+pub async fn head_download(url: &str, name: &str, dir: &Path) -> Result<(), Box<dyn Error>> {
     let t = url.split('.').rev().collect::<Vec<&str>>();
     let t = t.first().unwrap();
     let file = dir.join(name.to_owned() + t);
@@ -186,7 +88,7 @@ async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
     Err(errors.into())
 }
 
-fn format_song_artistes(name: &str, artistes: &[String], len: usize) -> String {
+pub fn format_song_artistes(name: &str, artistes: &[String], len: usize) -> String {
     let artistes = artistes
         .iter()
         .enumerate()
@@ -204,7 +106,7 @@ fn format_song_artistes(name: &str, artistes: &[String], len: usize) -> String {
 ///
 /// - data：传入专辑类型
 /// - path：文件的地址
-async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
+pub async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
     let songs = data.get_songs();
     let t_max = songs.len();
     let t = songs
@@ -230,7 +132,7 @@ async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
 ///
 /// - data：专辑信息
 /// - path：专辑文件夹地址
-async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
+pub async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
     let mut tasks = Vec::new();
     for x in data.get_songs() {
         tasks.push(download_song(x, path));
