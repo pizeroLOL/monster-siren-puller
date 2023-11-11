@@ -8,19 +8,20 @@ use monster_siren_puller::{
 pub struct AlbumCmd;
 
 impl AlbumCmd {
+    fn arts_format(song: &SongIndex) -> String {
+        let arts = song
+            .get_artistes()
+            .iter()
+            .map(|arts| "\n\t\t".to_owned() + arts)
+            .collect::<String>();
+        format!(
+            "\n\t名称: {}\n\tcid: {}\n\t艺术家: {arts}",
+            song.get_name(),
+            song.get_cid()
+        )
+    }
     fn about_song_fmt(song: &[SongIndex]) -> String {
-        song.iter()
-            .map(|songs| {
-                let name = songs.get_name();
-                let cid = songs.get_cid();
-                let artistes = songs
-                    .get_artistes()
-                    .iter()
-                    .map(|arts| format!("\n\t\t{arts}"))
-                    .collect::<String>();
-                format!("\n\t名称: {name}\n\tcid: {cid}\n\t艺术家: {artistes}",)
-            })
-            .collect::<String>()
+        song.iter().map(Self::arts_format).collect()
     }
 
     pub async fn about(cid: usize) -> Result<(), Box<dyn Error>> {
@@ -30,7 +31,7 @@ impl AlbumCmd {
         let album_intro = album
             .get_intro()
             .lines()
-            .map(|line| format!("\n\t{line}"))
+            .map(|line| "\n\t".to_owned() + line)
             .collect::<String>();
         let album_cover_url = album.get_cover_url();
         let album_cover_de_url = album.get_cover_de_url();
@@ -53,7 +54,7 @@ impl AlbumCmd {
         let songs = album
             .get_songs()
             .iter()
-            .map(|song| format!("{} \t {} \n", song.get_cid(), song.get_name()))
+            .map(|song| song.get_cid().to_owned() + "\t" + song.get_name() + "\n")
             .collect::<String>();
         println!("cid \t 名称\n{}", songs);
         Ok(())
