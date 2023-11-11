@@ -20,7 +20,7 @@ pub async fn get_cids() -> Result<Vec<(String, String)>, Box<dyn Error>> {
     // println!("{:?}",download_map);
 }
 
-fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(), Box<dyn Error>> {
+pub fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(), Box<dyn Error>> {
     let tasks = tasks
         .into_iter()
         .filter_map(|x| x.err())

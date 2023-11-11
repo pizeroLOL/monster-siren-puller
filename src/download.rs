@@ -1,4 +1,5 @@
 use crate::{
+    download_interface::get_errs,
     types::{Album, Response as SirenResponse, Song, SongIndex},
     USER_AGENT,
 };
@@ -12,21 +13,6 @@ use std::{
     thread,
     time::Duration,
 };
-
-fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(), Box<dyn Error>> {
-    let tasks = tasks.iter().filter(|x| x.is_err()).collect::<Vec<_>>();
-    if tasks.is_empty() {
-        return Ok(());
-    };
-    let tasks = tasks
-        .iter()
-        .filter_map(|d| match d {
-            Ok(_) => None,
-            Err(e) => Some(e),
-        })
-        .collect::<Vec<_>>();
-    Err(format!("{about} : {tasks:#?}").into())
-}
 
 pub async fn download(url: &str) -> Result<Response, reqwest::Error> {
     let client = reqwest::Client::builder()
