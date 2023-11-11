@@ -1,7 +1,5 @@
-use super::response::Response;
-use crate::{download::download, API};
+use crate::API;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
@@ -19,11 +17,6 @@ pub struct Song {
 impl Song {
     pub fn get_url(cid: &str) -> String {
         format!("{API}song/{cid}")
-    }
-    pub async fn get(cid: &str) -> Result<Song, Box<dyn Error>> {
-        let url = Self::get_url(cid);
-        let o = download(&url).await?.json::<Response<Song>>().await?.data;
-        Ok(o)
     }
     pub fn get_name(&self) -> &str {
         &self.name

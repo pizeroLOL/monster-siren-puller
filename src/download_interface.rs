@@ -1,6 +1,6 @@
 use crate::{
-    download::{download_songs, head_download, write_info},
-    types::{Album, AlbumIndex},
+    download::{ download_songs, head_download, write_info},
+    types::{Album, AlbumIndex, Response},
 };
 use futures::future::join_all;
 use std::{
@@ -10,7 +10,7 @@ use std::{
 };
 
 pub async fn get_cids() -> Result<Vec<(String, String)>, Box<dyn Error>> {
-    let t = AlbumIndex::get().await?;
+    let t: Vec<AlbumIndex> = Response::get(&AlbumIndex::get_url()).await?;
     let t: Vec<(String, String)> = t
         .iter()
         .map(|x| x.get_cid().to_string())
@@ -100,7 +100,7 @@ pub async fn download_all(dir: &Path) -> Result<(), Box<dyn Error>> {
 /// - dir：专辑文件夹所在的地址
 /// - dir_name：专辑名称
 pub async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box<dyn Error>> {
-    let data = Album::get(cid).await?;
+    let data: Album = Response::get(&Album::get_url(cid)).await?;
     println!("start {}", data.get_name());
     let dir = &dir.join(dir_name.trim());
     create_dir_all(dir)?;

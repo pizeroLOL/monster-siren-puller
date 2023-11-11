@@ -1,5 +1,5 @@
 use crate::{
-    types::{Album, Song, SongIndex},
+    types::{Album, Response as SirenResponse, Song, SongIndex},
     USER_AGENT,
 };
 use futures::future;
@@ -28,7 +28,7 @@ fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(), B
     Err(format!("{about} : {tasks:#?}").into())
 }
 
-pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
+pub async fn download(url: &str) -> Result<Response, reqwest::Error> {
     let client = reqwest::Client::builder()
         .user_agent(USER_AGENT)
         .timeout(Duration::from_secs(30))
@@ -44,7 +44,7 @@ pub async fn download(url: &str) -> Result<Response, Box<dyn Error>> {
             }
         }
     }
-    Ok(t?)
+    t
 }
 
 /// 获取所有专辑的 cid
@@ -152,7 +152,8 @@ pub async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Err
 /// - index：SongIndex，拿到地址
 /// - path：专辑文件夹地址
 async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Error>> {
-    let song = Song::get(index.get_cid()).await?;
+    let cid = Song::get_url(index.get_cid());
+    let song: Song = SirenResponse::get(&cid).await?;
     let name = song.get_name();
     println!("  start:{}", name);
     let t = [

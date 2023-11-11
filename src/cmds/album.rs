@@ -2,7 +2,7 @@ use std::{error::Error, path::Path};
 
 use monster_siren_puller::{
     download_interface::download_album,
-    types::{Album, SongIndex},
+    types::{Album, Response, SongIndex},
 };
 
 pub struct AlbumCmd;
@@ -23,7 +23,7 @@ impl AlbumCmd {
 
     pub async fn about(cid: usize) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
-        let album = Album::get(&cid).await?;
+        let album: Album = Response::get(&Album::get_url(&cid)).await?;
         let album_intro = album
             .get_intro()
             .lines()
@@ -45,7 +45,7 @@ impl AlbumCmd {
 
     pub async fn show(cid: usize) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
-        let album = Album::get(&cid).await?;
+        let album: Album = Response::get(&Album::get_url(&cid)).await?;
         let songs = album.get_songs();
         println!("cid \t 名称");
         for song in songs {
@@ -56,7 +56,7 @@ impl AlbumCmd {
 
     pub async fn get(dir: &Path, cid: usize) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
-        let album = Album::get(&cid).await?;
+        let album: Album = Response::get(&Album::get_url(&cid)).await?;
         let dir_name = album.get_name();
         download_album(&cid, dir, dir_name).await?;
         Ok(())
