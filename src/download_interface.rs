@@ -21,18 +21,17 @@ pub async fn get_cids() -> Result<Vec<(String, String)>, Box<dyn Error>> {
 }
 
 fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(), Box<dyn Error>> {
-    let tasks = tasks.iter().filter(|x| x.is_err()).collect::<Vec<_>>();
-    if tasks.is_empty() {
-        return Ok(());
-    };
     let tasks = tasks
-        .iter()
-        .filter_map(|d| match d {
-            Ok(_) => None,
-            Err(e) => Some(e),
-        })
+        .into_iter()
+        .filter_map(|x| x.err())
         .collect::<Vec<_>>();
-    Err(format!("{about} : {tasks:#?}").into())
+    match tasks.is_empty() {
+        true => Ok(()),
+        false => {
+            let e = format!("{about} : {tasks:#?}");
+            Err(e.into())
+        }
+    }
 }
 
 /// 以并行的方式获取所有的的专辑
