@@ -186,35 +186,3 @@ async fn download_asset(
     .await?;
     Ok(())
 }
-
-#[cfg(test)]
-mod test {
-    use crate::USER_AGENT;
-
-    use super::download_file;
-    use std::{path::Path, thread, time::Duration};
-
-    #[tokio::test]
-    async fn t() {
-        let path = "https://web.hycdn.cn/siren/pic/20230427/840c552b50612166caa8ee52ac7f6654.jpg";
-        download_file(path, Path::new("./hi.jpg")).await.unwrap()
-    }
-    #[tokio::test]
-    async fn x() {
-        let client = reqwest::Client::builder()
-            .user_agent(USER_AGENT)
-            .timeout(Duration::from_secs(10))
-            .build()
-            .unwrap();
-        let mut t = client.get("http://127.0.0.1:8000").send().await;
-        let mut tmp = 0;
-        let count = 3;
-        while t.is_err() && count > tmp {
-            println!("testing");
-            tmp += 1;
-            t = client.get("http://127.0.0.1:8000").send().await;
-            thread::sleep(Duration::from_secs(1))
-        }
-        println!("{:?}", t)
-    }
-}
