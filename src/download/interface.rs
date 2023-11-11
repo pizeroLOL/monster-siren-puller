@@ -1,11 +1,11 @@
 use crate::{
-    download::{ download_songs, head_download, write_info},
+    download::{download_songs, head_download, write_info},
     types::{Album, AlbumIndex, Response},
 };
 use futures::future::join_all;
 use std::{
     error::Error,
-    fs::{create_dir_all, read_dir},
+    fs::{create_dir_all, read_dir, DirEntry},
     path::Path,
 };
 
@@ -65,12 +65,20 @@ pub async fn download_top(dir: &Path, top: usize) -> Result<(), Box<dyn Error>> 
 
 /// 下载缺失的专辑
 pub async fn download_sync(dir: &Path) -> Result<(), Box<dyn Error>> {
+    #[inline]
+    fn get_dir_name(dir: DirEntry, root: &Path) -> std::string::String {
+        dir.path()
+            .strip_prefix(root)
+            .unwrap()
+            .to_string_lossy()
+            .to_string()
+    }
     if !dir.try_exists()? {
         create_dir_all(dir)?
     }
     let dirs = read_dir(dir)?
         .flatten()
-        .map(|x| x.path().to_string_lossy().to_string())
+        .map(|now| get_dir_name(now, dir))
         .collect::<Vec<String>>();
     let download_map = get_cids().await?;
     for (cid, dir_name) in download_map {
