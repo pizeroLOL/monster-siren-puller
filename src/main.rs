@@ -31,8 +31,14 @@ async fn main() {
 
 async fn album(dir: &Path, cid: usize, cmd: AlbumCommand) {
     match cmd {
-        AlbumCommand::About => AlbumCmd::about(cid).await.ok_or_eprintln(),
-        AlbumCommand::Show => AlbumCmd::show(cid).await.ok_or_eprintln(),
+        AlbumCommand::About => AlbumCmd::about(cid)
+            .await
+            .map_err(|e| e.into())
+            .ok_or_eprintln(),
+        AlbumCommand::Show => AlbumCmd::show(cid)
+            .await
+            .map_err(|e| e.into())
+            .ok_or_eprintln(),
         AlbumCommand::Get => AlbumCmd::get(dir, cid).await.ok_or_eprintln(),
     };
 }

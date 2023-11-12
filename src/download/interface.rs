@@ -34,19 +34,6 @@ pub fn get_errs(about: &str, tasks: Vec<Result<(), Box<dyn Error>>>) -> Result<(
     }
 }
 
-/// 以并行的方式获取所有的的专辑
-pub async fn dont_use_download_all() -> Result<(), Box<dyn Error>> {
-    let dir = Path::new("./siren");
-    let download_map = get_cids().await?;
-    let dl_tasks: Vec<_> = download_map
-        .iter()
-        .map(|(cid, name)| download_album(cid, dir, name))
-        .collect();
-    let dl_tasks = join_all(dl_tasks).await;
-    get_errs("download album error", dl_tasks)?;
-    Ok(())
-}
-
 /// 下载前几个的专辑
 ///
 /// top：下载的数量

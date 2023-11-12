@@ -21,7 +21,7 @@ impl AlbumCmd {
         )
     }
 
-    pub async fn about(cid: usize) -> Result<(), Box<dyn Error>> {
+    pub async fn about(cid: usize) -> Result<(), reqwest::Error> {
         let cid = cid.to_string();
         let album: Album = Response::get(&Album::get_url(&cid)).await?;
         let album_intro = album
@@ -43,7 +43,7 @@ impl AlbumCmd {
         Ok(())
     }
 
-    pub async fn show(cid: usize) -> Result<(), Box<dyn Error>> {
+    pub async fn show(cid: usize) -> Result<(), reqwest::Error> {
         let cid = cid.to_string();
         let album: Album = Response::get(&Album::get_url(&cid)).await?;
         let songs = album.get_songs();

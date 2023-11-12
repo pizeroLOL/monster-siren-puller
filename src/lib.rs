@@ -23,18 +23,14 @@ pub mod types;
 /// ```
 pub fn repair(dir: &Path) -> Result<(), Box<dyn Error>> {
     let dirs = read_dir(dir)?
-        .filter_map(|p| {
-            let dir = p.expect("无法读取文件夹").path();
-            let file = dir.join("info.txt");
-            if file.try_exists().expect("无法读取文件") {
-                None
-            } else {
-                Some(dir)
-            }
-        })
-        .collect::<Vec<_>>();
+        .filter_map(|dir| dir.ok())
+        .map(|dir| dir.path().join("info.txt"));
     for i in dirs {
-        fs::remove_dir_all(i.to_str().expect("cover_err"))?
+        i.try_exists().map_err(|e| format!("文件不存在：{e}"))?;
+        let path = i
+            .to_str()
+            .ok_or(format!("删除错误：{}", i.to_string_lossy()))?;
+        fs::remove_dir_all(path)?;
     }
 
     Ok(())

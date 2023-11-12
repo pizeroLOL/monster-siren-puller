@@ -4,6 +4,7 @@ pub mod info;
 
 pub use interface::*;
 
+use self::info::format_info;
 use crate::{
     types::{Album, Response as SirenResponse, Song, SongIndex},
     USER_AGENT,
@@ -18,8 +19,6 @@ use std::{
     thread,
     time::Duration,
 };
-
-use self::info::format_info;
 
 pub async fn download(url: &str) -> Result<Response, reqwest::Error> {
     let client = reqwest::Client::builder()
