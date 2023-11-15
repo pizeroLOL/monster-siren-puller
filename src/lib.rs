@@ -16,10 +16,11 @@ pub mod song;
 /// ```rust
 /// use std::{path::Path,fs};
 /// use monster_siren_puller::repair;
-///
-/// let dir = Path::new("./siren/NotDownloadFinishAlbum/");
-/// fs::create_dir_all(dir).unwrap();
-/// repair().unwrap();
+/// 
+/// let dir = Path::new("./siren")
+/// let full_dir = Path::new("./siren/NotDownloadFinishAlbum/");
+/// fs::create_dir_all(full_dir).unwrap();
+/// repair(dir).unwrap();
 /// assert!(!dir.exists());
 ///
 /// ```
