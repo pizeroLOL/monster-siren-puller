@@ -3,6 +3,7 @@ image: "rust:latest"
 
 default:
     before_script:
+        - mkdir -p ~/.cargo
         - echo "[source.crates-io]" >> ~/.cargo/config
         - echo "replace-with = 'mirror'" >> ~/.cargo/config
         - echo "[source.mirror]" >> >> ~/.cargo/config
