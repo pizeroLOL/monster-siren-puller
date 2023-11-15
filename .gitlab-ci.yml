@@ -1,6 +1,13 @@
 
 image: "rust:latest"
 
+default:
+    before_script:
+        - echo "[source.crates-io]" >> ~/.cargo/config
+        - echo "replace-with = 'mirror'" >> ~/.cargo/config
+        - echo "[source.mirror]" >> >> ~/.cargo/config
+        - echo "registry =  \"sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/\"" >> ~/.cargo/config
+
 stages:
     - test
     - build
