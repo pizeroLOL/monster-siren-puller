@@ -3,11 +3,10 @@ image: "rust:latest"
 
 default:
     before_script:
-        - mkdir -p ~/.cargo
-        - echo "[source.crates-io]" >> ~/.cargo/config
-        - echo "replace-with = 'mirror'" >> ~/.cargo/config
-        - echo "[source.mirror]" >> ~/.cargo/config
-        - echo "registry =  \"sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/\"" >> ~/.cargo/config
+        - echo "[source.crates-io]" >> /usr/local/cargo/config
+        - echo "replace-with = 'mirror'" >> /usr/local/cargo/config
+        - echo "[source.mirror]" >> /usr/local/cargo/config
+        - echo "registry =  \"sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/\"" >> /usr/local/cargo/config
 
 stages:
     - test
@@ -38,8 +37,8 @@ release:
         - main
     stage: build
     script: 
-        - rustup target add x86_64-unknown-linux-musl
-        - rustup target add x86_64-pc-windows-gnu
+        - RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup rustup target add x86_64-unknown-linux-musl
+        - RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup rustup target add x86_64-pc-windows-gnu
         - cargo build --release --target x86_64-unknown-linux-musl
         - cargo build --release --target x86_64-pc-windows-gnu
     artifacts:
@@ -51,8 +50,8 @@ build:
         - main
     stage: build
     script: 
-        - rustup target add x86_64-unknown-linux-musl
-        - rustup target add x86_64-pc-windows-gnu
+        - RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup rustup target add x86_64-unknown-linux-musl
+        - RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup rustup target add x86_64-pc-windows-gnu
         - cargo build --target x86_64-unknown-linux-musl
         - cargo build --target x86_64-pc-windows-gnu
     artifacts:
