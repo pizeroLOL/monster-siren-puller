@@ -45,7 +45,6 @@ build:
         - main
     stage: build
     script: 
-        - apt update && apt install openssl-dev
         - RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup rustup target add x86_64-unknown-linux-musl
         - RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup rustup target add x86_64-pc-windows-gnu
         - CC=x86_64-linux-musl-gcc cargo build --target x86_64-unknown-linux-musl
