@@ -5,6 +5,11 @@ stages:
     - test
     - build
 
+cache:
+   key: "$CI_COMMIT_REF_SLUG"
+   paths:
+       - cattest.txt
+
 test:cargo:
     stage: test
     script:
@@ -13,10 +18,19 @@ test:cargo:
 
 
 release:
+    cache:
+        policy: pull
+        paths:
+            - ~/.cargo
+            - ./target
     only:
         - main
     stage: build
-    script: cargo build --release
+    script: 
+        - rustup target add x86_64-unknown-linux-musl
+        - rustup target add x86_64-pc-windows-gnu
+        - cargo build --release --target x86_64-unknown-linux-musl
+        - cargo build --release --target x86_64-pc-windows-gnu
     artifacts:
         paths:
         - ./build/
@@ -25,8 +39,11 @@ build:
     except:
         - main
     stage: build
-    script: cargo build
+    script: 
+        - rustup target add x86_64-unknown-linux-musl
+        - rustup target add x86_64-pc-windows-gnu
+        - cargo build --target x86_64-unknown-linux-musl
+        - cargo build --target x86_64-pc-windows-gnu
     artifacts:
-      
       paths:
         - ./build/
