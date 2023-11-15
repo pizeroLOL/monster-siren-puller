@@ -5,10 +5,12 @@ stages:
     - test
     - build
 
+
 cache:
    key: "$CI_COMMIT_REF_SLUG"
    paths:
-       - cattest.txt
+       - ~/.cargo/
+       - ./target/
 
 test:cargo:
     stage: test
