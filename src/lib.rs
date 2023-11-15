@@ -10,17 +10,6 @@ pub mod types;
 /// 用于删除写入了一半的专辑
 ///
 /// 原理是清除没有 info.txt 的专辑文件夹
-///
-/// ```rust
-/// use std::{path::Path,fs};
-/// use monster_siren_puller::repair;
-///
-/// let dir = Path::new("./siren/NotDownloadFinishAlbum/");
-/// fs::create_dir_all(dir).unwrap();
-/// repair(Path::new("./siren")).unwrap();
-/// assert!(!dir.exists());
-///
-/// ```
 pub fn repair(dir: &Path) -> Result<(), Box<dyn Error>> {
     let dirs = read_dir(dir)?
         .filter_map(|dir| dir.ok())
