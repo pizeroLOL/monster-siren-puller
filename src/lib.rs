@@ -17,7 +17,7 @@ pub mod types;
 ///
 /// let dir = Path::new("./siren/NotDownloadFinishAlbum/");
 /// fs::create_dir_all(dir).unwrap();
-/// repair().unwrap();
+/// repair(Path::new("./siren")).unwrap();
 /// assert!(!dir.exists());
 ///
 /// ```
