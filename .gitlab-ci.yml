@@ -1,12 +1,7 @@
 
 image: "rust:latest"
 
-default:
-    before_script:
-        - echo "[source.crates-io]" >> /usr/local/cargo/config
-        - echo "replace-with = 'mirror'" >> /usr/local/cargo/config
-        - echo "[source.mirror]" >> /usr/local/cargo/config
-        - echo "registry =  \"sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/\"" >> /usr/local/cargo/config
+
 
 stages:
     - test
@@ -16,7 +11,7 @@ stages:
 cache:
    key: "$CI_COMMIT_REF_SLUG"
    paths:
-       - ~/.cargo/
+       - /usr/local/cargo
        - ./target/
 
 test:cargo:
