@@ -16,7 +16,7 @@ use std::{error::Error, path::Path};
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-    let dir = cli.dir.unwrap_or(Path::new("./siren/").to_path_buf());
+    let dir = cli.dir.unwrap_or(Path::new("siren").to_path_buf());
     let dir = dir.as_path();
 
     match cli.command {
