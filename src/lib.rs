@@ -13,12 +13,15 @@ pub mod types;
 pub fn repair(dir: &Path) -> Result<(), Box<dyn Error>> {
     let dirs = read_dir(dir)?
         .filter_map(|dir| dir.ok())
-        .map(|dir| dir.path().join("info.txt"));
-    for i in dirs {
-        i.try_exists().map_err(|e| format!("文件不存在：{e}"))?;
-        let path = i
+        .map(|dir| (dir.path(), dir.path().join("info.txt")));
+    for (path, i) in dirs {
+        if i.try_exists().map_err(|e| format!("文件不存在：{e}"))? {
+            continue;
+        }
+        let path = path
             .to_str()
             .ok_or(format!("删除错误：{}", i.to_string_lossy()))?;
+        println!("{}", path);
         fs::remove_dir_all(path)?;
     }
 
