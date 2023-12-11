@@ -37,6 +37,8 @@ pub async fn download(url: &str) -> Result<Response, reqwest::Error> {
     t
 }
 
+static REPLACE: [char; 9] = ['\\', '/', '*', ':', '"', '<', '>', '|', '.'];
+
 /// # 下载专辑头图
 ///
 /// ## 参数
@@ -96,14 +98,17 @@ pub async fn write_info(data: &Album, path: &Path) -> Result<(), Box<dyn Error>>
 /// - data：专辑信息
 /// - path：专辑文件夹地址
 pub async fn download_songs(data: &Album, path: &Path) -> Result<(), Box<dyn Error>> {
-    let mut tasks = Vec::new();
-    for x in data.get_songs() {
-        tasks.push(download_song(x, path));
+    // let mut tasks = Vec::new();
+    // for x in data.get_songs() {
+    //     tasks.push(download_song(x, path));
+    // }
+    // let tasks = future::join_all(tasks).await;
+    for i in data.get_songs() {
+        download_song(i, path).await?
     }
-    let tasks = future::join_all(tasks).await;
-    let name = data.get_name();
-    let err_about = format!("download {name} error");
-    get_errs(&err_about, tasks)?;
+    // let name = data.get_name();
+    // let err_about = format!("download {name} error");
+    // get_errs(&err_about, tasks)?;
     Ok(())
 }
 
@@ -125,7 +130,7 @@ async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Err
         song.get_mv_cover_url(),
     ];
     let mut tasks = Vec::new();
-    for i in t.iter().filter(|t| t.is_some()) {
+    for i in t.iter().flatten() {
         tasks.push(download_asset(i, path, &song))
     }
     let tasks = future::join_all(tasks).await;
@@ -135,16 +140,18 @@ async fn download_song(index: &SongIndex, path: &Path) -> Result<(), Box<dyn Err
     Ok(())
 }
 
-async fn download_asset(
-    item: &Option<String>,
-    path: &Path,
-    song: &Song,
-) -> Result<(), Box<dyn Error>> {
-    let i = item.clone().unwrap();
-    let t = i.split('.').rev().collect::<Vec<&str>>();
+async fn download_asset(item: &str, path: &Path, song: &Song) -> Result<(), Box<dyn Error>> {
+    let t = item.split('.').rev().collect::<Vec<&str>>();
     download_file(
-        &i,
-        &path.join(song.get_name().trim().to_owned() + "." + t.first().unwrap()),
+        &item,
+        &path.join(
+            song.get_name()
+                .replace(['\\', '/', '*', ':', '"', '<', '>', '|', '.'], "")
+                .trim()
+                .to_owned()
+                + "."
+                + t.first().unwrap(),
+        ),
     )
     .await?;
     Ok(())
