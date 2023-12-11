@@ -1,5 +1,5 @@
 use crate::{
-    download::{download_songs, head_download, write_info},
+    download::{download_songs, head_download, write_info, REPLACE},
     types::{Album, AlbumIndex, Response},
 };
 use futures::future::join_all;
@@ -97,7 +97,7 @@ pub async fn download_all(dir: &Path) -> Result<(), Box<dyn Error>> {
 pub async fn download_album(cid: &str, dir: &Path, dir_name: &str) -> Result<(), Box<dyn Error>> {
     let data: Album = Response::get(&Album::get_url(cid)).await?;
     println!("start {}", data.get_name());
-    let dir = &dir.join(dir_name.trim());
+    let dir = &dir.join(dir_name.replace(REPLACE, "").trim());
     create_dir_all(dir)?;
     let dl_headimg_tasks = vec![
         head_download(data.get_cover_url(), "head.", dir),

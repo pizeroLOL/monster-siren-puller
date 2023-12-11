@@ -1,7 +1,12 @@
-use std::{error::Error, path::Path};
+use std::error::Error;
 
 use monster_siren_puller::{
-    download::download_album,
+    download3::{
+        build_info::write_infos,
+        config::DLConfig,
+        downloading::{create_dirs, download_tasks},
+        padding::{get_albums_tasks, get_song_indexes, get_songs_tasks},
+    },
     types::{Album, Response, SongIndex},
 };
 
@@ -21,9 +26,10 @@ impl AlbumCmd {
         )
     }
 
-    pub async fn about(cid: usize) -> Result<(), reqwest::Error> {
+    pub async fn about(cid: usize, config: &DLConfig) -> Result<(), reqwest::Error> {
         let cid = cid.to_string();
-        let album: Album = Response::get(&Album::get_url(&cid)).await?;
+        let album =
+            Response::<Album>::get(&Album::get_url(&cid), &config.ua, config.timeout).await?;
         let album_intro = album
             .get_intro()
             .lines()
@@ -43,9 +49,10 @@ impl AlbumCmd {
         Ok(())
     }
 
-    pub async fn show(cid: usize) -> Result<(), reqwest::Error> {
+    pub async fn show(cid: usize, config: &DLConfig) -> Result<(), reqwest::Error> {
         let cid = cid.to_string();
-        let album: Album = Response::get(&Album::get_url(&cid)).await?;
+        let album =
+            Response::<Album>::get(&Album::get_url(&cid), &config.ua, config.timeout).await?;
         let songs = album.get_songs();
         println!("cid \t 名称");
         for song in songs {
@@ -54,11 +61,18 @@ impl AlbumCmd {
         Ok(())
     }
 
-    pub async fn get(dir: &Path, cid: usize) -> Result<(), Box<dyn Error>> {
+    pub async fn get(cid: usize, config: &DLConfig) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
-        let album: Album = Response::get(&Album::get_url(&cid)).await?;
-        let dir_name = album.get_name();
-        download_album(&cid, dir, dir_name).await?;
+        let album =
+            Response::<Album>::get(&Album::get_url(&cid), &config.ua, config.timeout).await?;
+        let mut tasks = Vec::new();
+        tasks.append(&mut get_albums_tasks(&vec![album.clone()]).to_vec());
+        let song_indexes = get_song_indexes(&vec![album.clone()]);
+        let songs_tasks = get_songs_tasks(song_indexes, &config.ua, config.timeout).await?;
+        tasks.append(&mut songs_tasks.to_vec());
+        create_dirs(&config.dir, &tasks)?;
+        download_tasks(&tasks, config).await?;
+        write_infos(&vec![album], &config.dir)?;
         Ok(())
     }
 }

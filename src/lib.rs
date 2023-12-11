@@ -4,7 +4,8 @@ use std::{
     path::Path,
 };
 
-pub mod download;
+// pub mod download;
+pub mod download3;
 pub mod types;
 
 /// 用于删除写入了一半的专辑
