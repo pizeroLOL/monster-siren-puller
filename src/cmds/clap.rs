@@ -12,13 +12,13 @@ pub struct Cli {
     #[arg(short, long, value_name = "DIR_PATH")]
     pub dir: Option<PathBuf>,
 
-    #[arg(short, long, value_name = "THREAD")]
+    #[arg(short = 'T', long, value_name = "THREAD")]
     pub thread: Option<usize>,
 
     #[arg(short, long, value_name = "User-Agent")]
     pub ua: Option<String>,
 
-    #[arg(short, long, value_name = "User-Agent")]
+    #[arg(short, long, value_name = "TIMEOUT")]
     pub timeout: Option<f64>,
 
     #[command(subcommand)]
