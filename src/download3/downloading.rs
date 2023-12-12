@@ -2,7 +2,7 @@ use std::{
     error::Error,
     fs::{create_dir_all, File},
     io::{Read, Write},
-    path::{Path, PathBuf},
+    path::Path,
     time::Duration,
 };
 
@@ -51,18 +51,14 @@ pub async fn get_file(url: &str, ua: &str, timeout: Duration) -> Result<Vec<u8>,
     Ok(x)
 }
 
-pub async fn download_file(
-    url: &str,
-    path: PathBuf,
-    ua: &str,
-    timeout: Duration,
-) -> Result<(), Vec<String>> {
+pub async fn download_file(task: &DLTask, config: &DLConfig) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
-    let mut file = File::create(path).map_err(|e| vec![e.to_string()])?;
+    let mut file = File::create(task.path(&config.dir)).map_err(|e| vec![e.to_string()])?;
     for _ in 0..3 {
-        match get_file(url, ua, timeout).await {
+        match get_file(&task.url, &config.ua, config.timeout).await {
             Ok(o) => {
                 file.write_all(&o).map_err(|e| vec![e.to_string()])?;
+                println!("{} {} ok", task.album, task.asset);
                 return Ok(());
             }
             Err(e) => errors.push(e.to_string()),
@@ -75,7 +71,7 @@ pub async fn download_tasks(tasks: &[DLTask], config: &DLConfig) -> Result<(), B
     for chunk in tasks.chunks(config.thread) {
         let task = chunk
             .iter()
-            .map(|i| download_file(&i.url, i.path(&config.dir), &config.ua, config.timeout))
+            .map(|i| download_file(i, config))
             .collect::<Vec<_>>();
         let tmp = join_all(task)
             .await
@@ -83,7 +79,9 @@ pub async fn download_tasks(tasks: &[DLTask], config: &DLConfig) -> Result<(), B
             .filter_map(|e| e.err())
             .flatten()
             .collect::<Vec<_>>();
-        return Err(format!("{:#?}", tmp).into());
+        if tmp.len() != 0 {
+            return Err(format!("{:#?}", tmp).into());
+        }
     }
     Ok(())
 }
