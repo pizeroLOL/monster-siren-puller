@@ -35,7 +35,7 @@ pub async fn download_sync(config: &DLConfig) -> Result<(), Box<dyn Error>> {
         .flatten()
         .map(|now| get_dir_name(now, &config.dir))
         .collect::<Vec<String>>();
-
+    println!("get dirs OK");
     let url = AlbumIndex::get_url();
     let album_indexes = SirenRespons::<Vec<AlbumIndex>>::get(&url, &config.ua, config.timeout)
         .await?
@@ -43,9 +43,12 @@ pub async fn download_sync(config: &DLConfig) -> Result<(), Box<dyn Error>> {
         .filter(|x| dirs.contains(&x.get_name().trim().replace(REPLACE, "")))
         .collect::<Vec<_>>();
     let (tasks, albums) = from_album_indexes(&album_indexes, &config.ua, config.timeout).await?;
+    println!("padding OK");
     create_dirs(&config.dir, &tasks)?;
     download_tasks(&tasks, &config).await?;
+    println!("download OK");
     write_infos(&albums, config.dir.as_path())?;
+    println!("gen info OK");
     Ok(())
 }
 
@@ -55,15 +58,19 @@ pub async fn download_top(index: usize, config: &DLConfig) -> Result<(), Box<dyn
         return download_all(config).await;
     }
     let url = AlbumIndex::get_url();
-    let album_indexes = &SirenRespons::<Vec<AlbumIndex>>::get(&url, &config.ua, config.timeout).await?;
+    let album_indexes =
+        &SirenRespons::<Vec<AlbumIndex>>::get(&url, &config.ua, config.timeout).await?;
     let Some(album_indexes) = album_indexes.chunks(index).next() else {
         println!("不足 {} 个，默认下载全部", index);
         return download_all(config).await;
     };
     let (tasks, albums) = from_album_indexes(&album_indexes, &config.ua, config.timeout).await?;
+    println!("padding OK");
     create_dirs(&config.dir, &tasks)?;
     download_tasks(&tasks, &config).await?;
+    println!("download OK");
     write_infos(&albums, config.dir.as_path())?;
+    println!("gen info OK");
     Ok(())
 }
 
@@ -72,9 +79,12 @@ pub async fn download_all(config: &DLConfig) -> Result<(), Box<dyn Error>> {
     let album_indexes =
         SirenRespons::<Vec<AlbumIndex>>::get(&url, &config.ua, config.timeout).await?;
     let (tasks, albums) = from_album_indexes(&album_indexes, &config.ua, config.timeout).await?;
+    println!("padding OK");
     create_dirs(&config.dir, &tasks)?;
     download_tasks(&tasks, &config).await?;
+    println!("download OK");
     write_infos(&albums, config.dir.as_path())?;
+    println!("gen info OK");
     Ok(())
 }
 
