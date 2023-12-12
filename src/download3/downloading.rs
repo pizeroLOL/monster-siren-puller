@@ -54,17 +54,19 @@ pub async fn get_file(url: &str, ua: &str, timeout: Duration) -> Result<Vec<u8>,
 pub async fn download_file(task: &DLTask, config: &DLConfig) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
     let mut file = File::create(task.path(&config.dir)).map_err(|e| vec![e.to_string()])?;
+    print!("{} {}", task.album, task.asset);
+    let _ = std::io::stdout().flush();
     for _ in 0..3 {
         match get_file(&task.url, &config.ua, config.timeout).await {
             Ok(o) => {
+                println!(" ok");
                 file.write_all(&o).map_err(|e| vec![e.to_string()])?;
-                println!("{} {} ok", task.album, task.asset);
                 return Ok(());
             }
             Err(e) => errors.push(e.to_string()),
         }
     }
-    Err(errors.into())
+    Err(errors)
 }
 
 pub async fn download_tasks(tasks: &[DLTask], config: &DLConfig) -> Result<(), Box<dyn Error>> {
@@ -79,7 +81,7 @@ pub async fn download_tasks(tasks: &[DLTask], config: &DLConfig) -> Result<(), B
             .filter_map(|e| e.err())
             .flatten()
             .collect::<Vec<_>>();
-        if tmp.len() != 0 {
+        if !tmp.is_empty() {
             return Err(format!("{:#?}", tmp).into());
         }
     }

@@ -52,6 +52,6 @@ async fn to_show(config: &DLConfig) -> Result<(), Box<dyn Error>> {
         .iter()
         .map(|album_index| (album_index.get_cid(), album_index.get_name()))
         .enumerate()
-        .for_each(|(index, (cid, name))| println!("{index} \t {cid} \t {name}"));
+        .for_each(|(index, (cid, name))| println!("{} \t {cid} \t {name}", index + 1));
     Ok(())
 }

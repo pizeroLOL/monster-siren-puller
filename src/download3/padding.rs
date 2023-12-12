@@ -26,7 +26,7 @@ impl DLTask {
 }
 
 pub fn get_url_name(name: &str, url: &str) -> String {
-    name.to_owned() + "." + &url.rsplit('.').next().unwrap()
+    name.to_owned() + "." + url.rsplit('.').next().unwrap()
 }
 
 pub fn get_albums_tasks(albums: &[Album]) -> &'static [DLTask] {
@@ -49,8 +49,8 @@ pub fn get_albums_tasks(albums: &[Album]) -> &'static [DLTask] {
 
 pub fn get_song_indexes(albums: &[Album]) -> Vec<(String, String)> {
     let song_indexes = albums
-        .into_iter()
-        .map(|album| {
+        .iter()
+        .flat_map(|album| {
             album
                 .get_songs()
                 .iter()
@@ -62,12 +62,11 @@ pub fn get_song_indexes(albums: &[Album]) -> Vec<(String, String)> {
                 })
                 .collect::<Vec<_>>()
         })
-        .flatten()
         .collect::<Vec<_>>();
     song_indexes
 }
 
-fn get_song_tasks(song: Song, album_name: &String) -> &'static [DLTask] {
+fn get_song_tasks(song: Song, album_name: &str) -> &'static [DLTask] {
     let song_name = song.get_name().replace(REPLACE, "");
     let tasks = [
         song.get_source_url(),
@@ -78,7 +77,7 @@ fn get_song_tasks(song: Song, album_name: &String) -> &'static [DLTask] {
     .into_iter()
     .flatten()
     .map(|x| x.to_string())
-    .map(|x| DLTask::new(album_name.clone(), get_url_name(&song_name, &x), x))
+    .map(|x| DLTask::new(album_name.to_owned(), get_url_name(&song_name, &x), x))
     .collect::<Vec<_>>();
     tasks.leak()
 }
@@ -110,7 +109,7 @@ pub async fn get_songs_tasks(
         if index % 20 == 0 {
             sleep(Duration::from_secs(1)).await;
         }
-        let url = Song::get_url(&cid);
+        let url = Song::get_url(cid);
         let song = Response::<Song>::get(&url, ua, timeout).await?;
         tmp.append(&mut get_song_tasks(song, album_name).to_vec())
     }
