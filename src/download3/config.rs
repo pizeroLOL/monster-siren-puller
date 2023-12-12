@@ -65,7 +65,6 @@ pub struct DLConfig {
     pub timeout: Duration,
 }
 
-
 impl DLConfig {
     pub fn new(dir: PathBuf, thread: usize, ua: String, timeout: Duration) -> Self {
         Self {

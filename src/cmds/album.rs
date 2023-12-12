@@ -66,13 +66,13 @@ impl AlbumCmd {
         let album =
             Response::<Album>::get(&Album::get_url(&cid), &config.ua, config.timeout).await?;
         let mut tasks = Vec::new();
-        tasks.append(&mut get_albums_tasks(&vec![album.clone()]).to_vec());
-        let song_indexes = get_song_indexes(&vec![album.clone()]);
+        tasks.append(&mut get_albums_tasks(&[album.clone()]).to_vec());
+        let song_indexes = get_song_indexes(&[album.clone()]);
         let songs_tasks = get_songs_tasks(song_indexes, &config.ua, config.timeout).await?;
         tasks.append(&mut songs_tasks.to_vec());
         create_dirs(&config.dir, &tasks)?;
         download_tasks(&tasks, config).await?;
-        write_infos(&vec![album], &config.dir)?;
+        write_infos(&[album], &config.dir)?;
         Ok(())
     }
 }

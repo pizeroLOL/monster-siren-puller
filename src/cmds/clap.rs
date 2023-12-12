@@ -46,7 +46,7 @@ impl TryInto<DLConfig> for Cli {
             .thread(self.thread.unwrap_or(def.thread))
             .timeout(
                 self.timeout
-                    .map(|num| Duration::from_secs_f64(num))
+                    .map(Duration::from_secs_f64)
                     .unwrap_or(def.timeout),
             )
             .build();
