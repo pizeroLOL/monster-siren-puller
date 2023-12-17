@@ -11,6 +11,7 @@ pub struct DLConfigBuilder {
     thread: Option<usize>,
     ua: Option<String>,
     timeout: Option<Duration>,
+    retry_time: Option<Duration>,
 }
 
 impl DLConfigBuilder {
@@ -20,6 +21,7 @@ impl DLConfigBuilder {
             thread: None,
             ua: None,
             timeout: None,
+            retry_time: None,
         }
     }
     pub fn dir(self, dir_path: &Path) -> Self {
@@ -46,6 +48,12 @@ impl DLConfigBuilder {
             ..self
         }
     }
+    pub fn retry_time(self, dur: Duration) -> Self {
+        Self {
+            retry_time: Some(dur),
+            ..self
+        }
+    }
     pub fn build(self) -> DLConfig {
         let def = DLConfig::default();
         DLConfig {
@@ -53,6 +61,7 @@ impl DLConfigBuilder {
             thread: self.thread.unwrap_or(def.thread),
             ua: self.ua.unwrap_or(def.ua),
             timeout: self.timeout.unwrap_or(def.timeout),
+            retry_time: self.retry_time.unwrap_or(def.retry_time),
         }
     }
 }
@@ -63,15 +72,23 @@ pub struct DLConfig {
     pub thread: usize,
     pub ua: String,
     pub timeout: Duration,
+    pub retry_time: Duration,
 }
 
 impl DLConfig {
-    pub fn new(dir: PathBuf, thread: usize, ua: String, timeout: Duration) -> Self {
+    pub fn new(
+        dir: PathBuf,
+        thread: usize,
+        ua: String,
+        timeout: Duration,
+        retry_time: Duration,
+    ) -> Self {
         Self {
             dir,
             thread,
             ua,
             timeout,
+            retry_time,
         }
     }
 }
@@ -83,6 +100,7 @@ impl Default for DLConfig {
             thread: 1,
             ua: USER_AGENT.to_owned(),
             timeout: Duration::from_secs(30),
+            retry_time: Duration::from_secs(30),
         }
     }
 }

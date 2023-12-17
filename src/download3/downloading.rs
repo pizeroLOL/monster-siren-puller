@@ -3,7 +3,6 @@ use std::{
     fs::{create_dir_all, File},
     io::{Read, Write},
     path::Path,
-    time::Duration,
 };
 
 use futures::future::join_all;
@@ -12,17 +11,17 @@ use tokio::time::sleep;
 
 use super::{config::DLConfig, padding::DLTask};
 
-pub async fn download(url: &str, ua: &str, timeout: Duration) -> Result<Response, reqwest::Error> {
+pub async fn download(url: &str, config: &DLConfig) -> Result<Response, reqwest::Error> {
     let client = reqwest::Client::builder()
-        .user_agent(ua)
-        .timeout(timeout)
+        .user_agent(&config.ua)
+        .timeout(config.timeout)
         .build()?;
     let mut t = client.get(url).send().await;
     for _ in 0..3 {
         if let Ok(o) = t {
             return Ok(o);
         }
-        sleep(timeout).await;
+        sleep(config.retry_time).await;
         t = client.get(url).send().await;
         continue;
     }
@@ -41,8 +40,8 @@ pub fn create_dirs(dir: &Path, tasks: &[DLTask]) -> std::io::Result<()> {
     Ok(())
 }
 
-pub async fn get_file(url: &str, ua: &str, timeout: Duration) -> Result<Vec<u8>, Box<dyn Error>> {
-    let x = download(url, ua, timeout)
+pub async fn get_file(url: &str, config: &DLConfig) -> Result<Vec<u8>, Box<dyn Error>> {
+    let x = download(url, config)
         .await?
         .bytes()
         .await?
@@ -54,12 +53,17 @@ pub async fn get_file(url: &str, ua: &str, timeout: Duration) -> Result<Vec<u8>,
 pub async fn download_file(task: &DLTask, config: &DLConfig) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
     let mut file = File::create(task.path(&config.dir)).map_err(|e| vec![e.to_string()])?;
-    print!("{} {}", task.album, task.asset);
+    match config.thread != 1 {
+        true => println!("{} {}", task.album, task.asset),
+        false => print!("{} {}", task.album, task.asset),
+    }
     let _ = std::io::stdout().flush();
     for _ in 0..3 {
-        match get_file(&task.url, &config.ua, config.timeout).await {
+        match get_file(&task.url, config).await {
             Ok(o) => {
-                println!(" ok");
+                if config.thread == 1 {
+                    println!(" ok");
+                }
                 file.write_all(&o).map_err(|e| vec![e.to_string()])?;
                 return Ok(());
             }

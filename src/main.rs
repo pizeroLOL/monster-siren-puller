@@ -45,7 +45,7 @@ async fn album(cid: usize, cmd: AlbumCommand, config: &DLConfig) {
 
 async fn to_show(config: &DLConfig) -> Result<(), Box<dyn Error>> {
     let url = AlbumIndex::get_url();
-    let album_indexes = Response::<Vec<AlbumIndex>>::get(&url, &config.ua, config.timeout).await?;
+    let album_indexes = Response::<Vec<AlbumIndex>>::get(&url, config).await?;
 
     println!("索引 \t cid \t 专辑名");
     album_indexes

@@ -38,14 +38,13 @@ pub async fn download_sync(config: &DLConfig) -> Result<(), Box<dyn Error>> {
     println!("get dirs OK");
     // println!("{dirs:#?}");
     let url = AlbumIndex::get_url();
-    let album_indexes =
-        SirenRespons::<Vec<AlbumIndex>>::get(&url, &config.ua, config.timeout).await?;
+    let album_indexes = SirenRespons::<Vec<AlbumIndex>>::get(&url, config).await?;
     let album_indexes = album_indexes
         .into_iter()
-        .filter(|x| !dirs.contains(&x.get_name().trim().replace(REPLACE, "")))
+        .filter(|x| !dirs.contains(&x.get_name().replace(REPLACE, "").trim().to_owned()))
         .collect::<Vec<_>>();
     // println!("{album_indexes:#?}");
-    let (tasks, albums) = from_album_indexes(&album_indexes, &config.ua, config.timeout).await?;
+    let (tasks, albums) = from_album_indexes(&album_indexes, config).await?;
     println!("padding OK");
     create_dirs(&config.dir, tasks)?;
     download_tasks(tasks, config).await?;
@@ -61,13 +60,12 @@ pub async fn download_top(index: usize, config: &DLConfig) -> Result<(), Box<dyn
         return download_all(config).await;
     }
     let url = AlbumIndex::get_url();
-    let album_indexes =
-        &SirenRespons::<Vec<AlbumIndex>>::get(&url, &config.ua, config.timeout).await?;
+    let album_indexes = &SirenRespons::<Vec<AlbumIndex>>::get(&url, config).await?;
     let Some(album_indexes) = album_indexes.chunks(index).next() else {
         println!("不足 {} 个，默认下载全部", index);
         return download_all(config).await;
     };
-    let (tasks, albums) = from_album_indexes(album_indexes, &config.ua, config.timeout).await?;
+    let (tasks, albums) = from_album_indexes(album_indexes, config).await?;
     println!("padding OK");
     create_dirs(&config.dir, tasks)?;
     download_tasks(tasks, config).await?;
@@ -79,12 +77,11 @@ pub async fn download_top(index: usize, config: &DLConfig) -> Result<(), Box<dyn
 
 pub async fn download_all(config: &DLConfig) -> Result<(), Box<dyn Error>> {
     let url = AlbumIndex::get_url();
-    let album_indexes =
-        SirenRespons::<Vec<AlbumIndex>>::get(&url, &config.ua, config.timeout).await?;
-    let (tasks, albums) = from_album_indexes(&album_indexes, &config.ua, config.timeout).await?;
+    let album_indexes = SirenRespons::<Vec<AlbumIndex>>::get(&url, config).await?;
+    let (tasks, albums) = from_album_indexes(&album_indexes, config).await?;
     println!("padding OK");
     create_dirs(&config.dir, tasks)?;
-    download_tasks(&tasks, config).await?;
+    download_tasks(tasks, config).await?;
     println!("download OK");
     write_infos(albums, config.dir.as_path())?;
     println!("gen info OK");
