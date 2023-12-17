@@ -28,8 +28,7 @@ impl AlbumCmd {
 
     pub async fn about(cid: usize, config: &DLConfig) -> Result<(), reqwest::Error> {
         let cid = cid.to_string();
-        let album =
-            Response::<Album>::get(&Album::get_url(&cid), &config.ua, config.timeout).await?;
+        let album = Response::<Album>::get(&Album::get_url(&cid), config).await?;
         let album_intro = album
             .get_intro()
             .lines()
@@ -51,8 +50,7 @@ impl AlbumCmd {
 
     pub async fn show(cid: usize, config: &DLConfig) -> Result<(), reqwest::Error> {
         let cid = cid.to_string();
-        let album =
-            Response::<Album>::get(&Album::get_url(&cid), &config.ua, config.timeout).await?;
+        let album = Response::<Album>::get(&Album::get_url(&cid), config).await?;
         let songs = album.get_songs();
         println!("cid \t 名称");
         for song in songs {
@@ -63,12 +61,11 @@ impl AlbumCmd {
 
     pub async fn get(cid: usize, config: &DLConfig) -> Result<(), Box<dyn Error>> {
         let cid = cid.to_string();
-        let album =
-            Response::<Album>::get(&Album::get_url(&cid), &config.ua, config.timeout).await?;
+        let album = Response::<Album>::get(&Album::get_url(&cid), config).await?;
         let mut tasks = Vec::new();
         tasks.append(&mut get_albums_tasks(&[album.clone()]).to_vec());
         let song_indexes = get_song_indexes(&[album.clone()]);
-        let songs_tasks = get_songs_tasks(song_indexes, &config.ua, config.timeout).await?;
+        let songs_tasks = get_songs_tasks(song_indexes, config).await?;
         tasks.append(&mut songs_tasks.to_vec());
         create_dirs(&config.dir, &tasks)?;
         download_tasks(&tasks, config).await?;

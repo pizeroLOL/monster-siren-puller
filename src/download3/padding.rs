@@ -1,9 +1,6 @@
-use super::REPLACE;
+use super::{config::DLConfig, REPLACE};
 use crate::types::{Album, AlbumIndex, Response, Song};
-use std::{
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::path::{Path, PathBuf};
 use tokio::time::sleep;
 
 #[derive(Debug, Clone)]
@@ -32,14 +29,15 @@ pub fn get_url_name(name: &str, url: &str) -> String {
 pub fn get_albums_tasks(albums: &[Album]) -> &'static [DLTask] {
     let mut tasks = Vec::new();
     for album in albums {
-        let album_name = album.get_name().trim().replace(REPLACE, "");
+        let album_name = album.get_name().replace(REPLACE, "");
+        let album_name = album_name.trim();
         tasks.push(DLTask::new(
-            album_name.clone(),
+            album_name.to_string(),
             get_url_name("cover", album.get_cover_url()),
             album.get_cover_url().to_string(),
         ));
         tasks.push(DLTask::new(
-            album_name,
+            album_name.to_string(),
             get_url_name("head", album.get_cover_de_url()),
             album.get_cover_de_url().to_string(),
         ));
@@ -48,21 +46,19 @@ pub fn get_albums_tasks(albums: &[Album]) -> &'static [DLTask] {
 }
 
 pub fn get_song_indexes(albums: &[Album]) -> Vec<(String, String)> {
-    let song_indexes = albums
-        .iter()
-        .flat_map(|album| {
-            album
-                .get_songs()
-                .iter()
-                .map(|x| {
-                    (
-                        album.get_name().to_string().replace(REPLACE, ""),
-                        x.get_cid().to_string(),
-                    )
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
+    #[inline]
+    fn get_name_cid(album: &Album) -> Vec<(String, String)> {
+        album
+            .get_songs()
+            .iter()
+            .map(|x| {
+                let name = album.get_name().replace(REPLACE, "").trim().to_string();
+                (name, x.get_cid().to_string())
+            })
+            .collect::<Vec<_>>()
+    }
+
+    let song_indexes = albums.iter().flat_map(get_name_cid).collect::<Vec<_>>();
     song_indexes
 }
 
@@ -84,16 +80,15 @@ fn get_song_tasks(song: Song, album_name: &str) -> &'static [DLTask] {
 
 pub async fn get_albums(
     album_indexes: &[AlbumIndex],
-    ua: &str,
-    timeout: Duration,
+    config: &DLConfig,
 ) -> Result<Vec<Album>, reqwest::Error> {
     let mut albums = Vec::new();
     for (index, album_index) in album_indexes.iter().enumerate() {
         if index % 20 == 0 {
-            sleep(Duration::from_secs(1)).await;
+            sleep(config.retry_time).await;
         }
         let url = Album::get_url(album_index.get_cid());
-        let album = Response::<Album>::get(&url, ua, timeout).await?;
+        let album = Response::<Album>::get(&url, config).await?;
         albums.push(album)
     }
     Ok(albums)
@@ -101,16 +96,17 @@ pub async fn get_albums(
 
 pub async fn get_songs_tasks(
     song_indexes: Vec<(String, String)>,
-    ua: &str,
-    timeout: Duration,
+    config: &DLConfig,
 ) -> Result<&[DLTask], reqwest::Error> {
     let mut tmp = Vec::new();
     for (index, (album_name, cid)) in song_indexes.iter().enumerate() {
+        let album_name = album_name.replace(REPLACE, "");
+        let album_name = album_name.trim();
         if index % 20 == 0 {
-            sleep(Duration::from_secs(1)).await;
+            sleep(config.retry_time).await;
         }
         let url = Song::get_url(cid);
-        let song = Response::<Song>::get(&url, ua, timeout).await?;
+        let song = Response::<Song>::get(&url, config).await?;
         tmp.append(&mut get_song_tasks(song, album_name).to_vec())
     }
     Ok(tmp.leak())
@@ -118,14 +114,13 @@ pub async fn get_songs_tasks(
 
 pub async fn from_album_indexes(
     album_indexes: &[AlbumIndex],
-    ua: &str,
-    timeout: Duration,
+    config: &DLConfig,
 ) -> Result<(&'static [DLTask], &'static [Album]), reqwest::Error> {
     let mut tasks = Vec::new();
-    let albums = get_albums(album_indexes, ua, timeout).await?;
+    let albums = get_albums(album_indexes, config).await?;
     tasks.append(&mut get_albums_tasks(&albums).to_vec());
     let song_indexes = get_song_indexes(&albums);
-    let songs_tasks = get_songs_tasks(song_indexes, ua, timeout).await?;
+    let songs_tasks = get_songs_tasks(song_indexes, config).await?;
     tasks.append(&mut songs_tasks.to_vec());
     Ok((tasks.leak(), albums.leak()))
 }

@@ -21,6 +21,9 @@ pub struct Cli {
     #[arg(short, long, value_name = "TIMEOUT")]
     pub timeout: Option<f64>,
 
+    #[arg(short, long, value_name = "RETRY-TIME")]
+    pub retry_time: Option<f64>,
+
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -48,6 +51,11 @@ impl TryInto<DLConfig> for Cli {
                 self.timeout
                     .map(Duration::from_secs_f64)
                     .unwrap_or(def.timeout),
+            )
+            .retry_time(
+                self.retry_time
+                    .map(Duration::from_secs_f64)
+                    .unwrap_or(def.retry_time),
             )
             .build();
         Ok(tmp)

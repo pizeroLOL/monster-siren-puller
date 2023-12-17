@@ -37,9 +37,9 @@ pub fn format_info(data: &Album) -> String {
 
 pub fn write_infos(albums: &[Album], path: &Path) -> io::Result<()> {
     for album in albums {
-        let path = path
-            .join(album.get_name().trim().replace(REPLACE, ""))
-            .join("info.txt");
+        let album_name = album.get_name().replace(REPLACE, "");
+        let album_name = album_name.trim();
+        let path = path.join(album_name).join("info.txt");
         let mut file = File::create(path)?;
         file.write_all(format_info(album).as_bytes())?;
     }

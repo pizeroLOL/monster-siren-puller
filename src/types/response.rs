@@ -1,8 +1,6 @@
-use std::time::Duration;
-
 use serde::{Deserialize, Serialize};
 
-use crate::download3::downloading::download;
+use crate::download3::{config::DLConfig, downloading::download};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Response<T> {
@@ -16,8 +14,8 @@ where
     T: for<'a> Deserialize<'a>,
     Self: Sized,
 {
-    pub async fn get(url: &str, ua: &str, timeout: Duration) -> Result<T, reqwest::Error> {
-        let o = download(url, ua, timeout)
+    pub async fn get(url: &str, config: &DLConfig) -> Result<T, reqwest::Error> {
+        let o = download(url, config)
             .await?
             .json::<Response<T>>()
             .await?
