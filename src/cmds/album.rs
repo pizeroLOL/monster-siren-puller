@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use monster_siren_puller::{
-    download3::{
+    download::{
         build_info::write_infos,
         config::DLConfig,
         downloading::{create_dirs, download_tasks},

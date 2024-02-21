@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::download3::{config::DLConfig, downloading::download};
+use crate::download::{config::DLConfig, downloading::download};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Response<T> {

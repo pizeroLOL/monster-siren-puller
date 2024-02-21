@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use monster_siren_puller::download3::config::{DLConfig, DLConfigBuilder};
+use monster_siren_puller::download::config::{DLConfig, DLConfigBuilder};
 use std::{path::PathBuf, time::Duration};
 
 #[derive(Parser, Debug, Clone)]

@@ -4,7 +4,7 @@ use cmds::{
     try_or_eprintln::OkOrEPrintln,
 };
 use monster_siren_puller::{
-    download3::{config::DLConfig, download_all, download_sync, download_top},
+    download::{config::DLConfig, download_all, download_sync, download_top},
     repair,
     types::{AlbumIndex, Response},
 };
