@@ -21,19 +21,19 @@ impl Song {
     pub fn get_name(&self) -> &str {
         &self.name
     }
-    pub fn get_source_url(&self) -> &Option<String> {
-        &self.sourceUrl
+    pub fn get_source_url(&self) -> Option<&str> {
+        self.sourceUrl.as_deref()
     }
-    pub fn get_lyric_url(&self) -> &Option<String> {
-        &self.lyricUrl
+    pub fn get_lyric_url(&self) -> Option<&str> {
+        self.lyricUrl.as_deref()
     }
-    pub fn get_mv_url(&self) -> &Option<String> {
-        &self.mvUrl
+    pub fn get_mv_url(&self) -> Option<&str> {
+        self.mvUrl.as_deref()
     }
-    pub fn get_mv_cover_url(&self) -> &Option<String> {
-        &self.mvCoverUrl
+    pub fn get_mv_cover_url(&self) -> Option<&str> {
+        self.mvCoverUrl.as_deref()
     }
-    pub fn get_artists(&self) -> &Vec<String> {
+    pub fn get_artists(&self) -> &[String] {
         &self.artists
     }
 }

@@ -1,7 +1,8 @@
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
+use monster_siren_puller::download::config::{DLConfig, DLConfigBuilder};
+use std::{path::PathBuf, time::Duration};
 
-#[derive(Parser)]
+#[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
     // /// 将日志调整到 Debug 模式
@@ -11,11 +12,57 @@ pub struct Cli {
     #[arg(short, long, value_name = "DIR_PATH")]
     pub dir: Option<PathBuf>,
 
+    #[arg(short = 'T', long, value_name = "THREAD")]
+    pub thread: Option<usize>,
+
+    #[arg(short, long, value_name = "User-Agent")]
+    pub ua: Option<String>,
+
+    #[arg(short, long, value_name = "TIMEOUT")]
+    pub timeout: Option<f64>,
+
+    #[arg(short, long, value_name = "RETRY-TIME")]
+    pub retry_time: Option<f64>,
+
     #[command(subcommand)]
     pub command: Commands,
 }
 
-#[derive(Subcommand)]
+#[derive(Debug, Clone)]
+pub enum ToDLConfigError {
+    NegativeNumber,
+}
+
+impl TryInto<DLConfig> for Cli {
+    type Error = ToDLConfigError;
+
+    fn try_into(self) -> Result<DLConfig, Self::Error> {
+        if let Some(num) = self.timeout {
+            if num <= 0.0 {
+                return Err(ToDLConfigError::NegativeNumber);
+            }
+        }
+        let def = DLConfig::default();
+        let tmp = DLConfigBuilder::new()
+            .dir(&self.dir.unwrap_or(def.dir))
+            .ua(&self.ua.unwrap_or(def.ua))
+            .thread(self.thread.unwrap_or(def.thread))
+            .timeout(
+                self.timeout
+                    .map(Duration::from_secs_f64)
+                    .unwrap_or(def.timeout),
+            )
+            .retry_time(
+                self.retry_time
+                    .map(Duration::from_secs_f64)
+                    .unwrap_or(def.retry_time),
+            )
+            .build();
+        Ok(tmp)
+    }
+}
+
+#[derive(Subcommand, Debug, Clone)]
 pub enum Commands {
     /// 获取前 <INDEX> 个专辑
     Top { index: usize },
@@ -41,7 +88,7 @@ pub enum Commands {
     },
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum AlbumCommand {
     /// 关于该专辑
     About,
