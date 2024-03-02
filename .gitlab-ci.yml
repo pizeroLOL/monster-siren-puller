@@ -1,0 +1,35 @@
+image: "rust:latest"
+
+stages:
+    - test
+    - build
+
+cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+        - /usr/local/cargo
+        - ./target/
+
+test:cargo:
+    stage: test
+    script:
+        - echo $CARGO_HOME
+        - rustc --version && cargo --version # Print version info for debugging
+        - cargo test --workspace --verbose
+
+release:
+    cache:
+        policy: pull
+        paths:
+            - ~/.cargo
+            - ./target
+    only:
+        - main
+    stage: build
+    script:
+        - RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup rustup target add x86_64-unknown-linux-musl
+        - RUSTUP_DIST_SERVER=https://mirrors.tuna.tsinghua.edu.cn/rustup rustup target add x86_64-pc-windows-gnu
+        - cargo build --release
+    artifacts:
+        paths:
+            - ./build/
